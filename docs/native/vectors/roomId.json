@@ -1,0 +1,228 @@
+{
+  "area": "roomId",
+  "schema": 1,
+  "generator": "scratch gen_roomid.mjs — verbatim port of mobile/src/utils/roomId.ts (generateRoomId, normalizeRoomId) + crypto.ts secureUUID with the 16-byte nacl.randomBytes draw injected",
+  "sources": [
+    "mobile/src/utils/roomId.ts",
+    "mobile/src/utils/crypto.ts secureUUID",
+    "internal/server validRoomID ^[a-z0-9]{3}-[a-z0-9]{3}-[a-z0-9]{3}-[a-z0-9]{3}$"
+  ],
+  "notes": [
+    "generateRoomId = ONE 16-byte draw; UUIDv4 version/variant bits are applied BEFORE the fold (byte 6 -> 0x4?, byte 8 -> 0b10??????), then the first 12 bytes are folded %36 into a-z0-9.",
+    "normalizeRoomId: JS trim (incl. U+FEFF), toLowerCase, remove every \"-\", require exactly 12 [a-z0-9]."
+  ],
+  "generate": [
+    {
+      "rng": {
+        "label": "roomId#0",
+        "draws": [
+          {
+            "hex": "00000000000000000000000000000000"
+          }
+        ]
+      },
+      "roomId": "aaa-aaa-2au-aaa"
+    },
+    {
+      "rng": {
+        "label": "roomId#1",
+        "draws": [
+          {
+            "hex": "ffffffffffffffffffffffffffffffff"
+          }
+        ]
+      },
+      "roomId": "ddd-ddd-hdl-ddd"
+    },
+    {
+      "rng": {
+        "label": "roomId#2",
+        "draws": [
+          {
+            "hex": "00112233445566778899aabbccddeeff"
+          }
+        ]
+      },
+      "roomId": "ar8-p6n-8l2-j0h"
+    },
+    {
+      "rng": {
+        "label": "roomId#3",
+        "draws": [
+          {
+            "hex": "469881f05beb279b1e3c53030f65f387"
+          }
+        ]
+      },
+      "roomId": "8iv-ytt-9lo-yld"
+    },
+    {
+      "rng": {
+        "label": "roomId#4",
+        "draws": [
+          {
+            "hex": "b5edc2f9b9fb4418bd7bdf0a9f583ef2"
+          }
+        ]
+      },
+      "roomId": "bvo-7f9-6yj-phk"
+    },
+    {
+      "rng": {
+        "label": "roomId#5",
+        "draws": [
+          {
+            "hex": "d111372e6999eed7d34733ee30966772"
+          }
+        ]
+      },
+      "roomId": "3rt-k7j-g9d-9pw"
+    },
+    {
+      "rng": {
+        "label": "roomId#6",
+        "draws": [
+          {
+            "hex": "7139960a8c034a18905e6745d849d35b"
+          }
+        ]
+      },
+      "roomId": "fvg-k6d-cya-w57"
+    },
+    {
+      "rng": {
+        "label": "roomId#7",
+        "draws": [
+          {
+            "hex": "14619ba92f48d9f7df6851d6fddabffc"
+          }
+        ]
+      },
+      "roomId": "uzl-zla-b5p-6j8"
+    }
+  ],
+  "normalize": [
+    {
+      "input": " ABC-DEF-123-XYZ ",
+      "normalized": "abc-def-123-xyz"
+    },
+    {
+      "input": "abcdef123xyz",
+      "normalized": "abc-def-123-xyz"
+    },
+    {
+      "input": "abc-def-123-xyz",
+      "normalized": "abc-def-123-xyz"
+    },
+    {
+      "input": "a-b-c-d-e-f-1-2-3-x-y-z",
+      "normalized": "abc-def-123-xyz"
+    },
+    {
+      "input": "abcdef123xy",
+      "normalized": null
+    },
+    {
+      "input": "abcdef123xyz0",
+      "normalized": null
+    },
+    {
+      "input": "abc def 123 xyz",
+      "normalized": null
+    },
+    {
+      "input": "abc_def_123_xyz",
+      "normalized": null
+    },
+    {
+      "input": "﻿abcdef123xyz\n",
+      "normalized": "abc-def-123-xyz"
+    },
+    {
+      "input": "Kabcdef123xy",
+      "normalized": "kab-cde-f12-3xy"
+    },
+    {
+      "input": "abcdef123xyé",
+      "normalized": null
+    },
+    {
+      "input": "",
+      "normalized": null
+    },
+    {
+      "input": "---",
+      "normalized": null
+    },
+    {
+      "input": "ABCDEF123XYZ",
+      "normalized": "abc-def-123-xyz"
+    }
+  ],
+  "validity": [
+    {
+      "id": "abc-def-123-xyz",
+      "valid": true
+    },
+    {
+      "id": "ABC-def-123-xyz",
+      "valid": false
+    },
+    {
+      "id": "abcdef123xyz",
+      "valid": false
+    },
+    {
+      "id": "abc-def-123-xyz-",
+      "valid": false
+    },
+    {
+      "id": "abc_def-123-xyz",
+      "valid": false
+    },
+    {
+      "id": "ab-cdef-123-xyz",
+      "valid": false
+    },
+    {
+      "id": "abc-def-123-xy",
+      "valid": false
+    },
+    {
+      "id": "",
+      "valid": false
+    },
+    {
+      "id": "aaa-aaa-2au-aaa",
+      "valid": true
+    },
+    {
+      "id": "ddd-ddd-hdl-ddd",
+      "valid": true
+    },
+    {
+      "id": "ar8-p6n-8l2-j0h",
+      "valid": true
+    },
+    {
+      "id": "8iv-ytt-9lo-yld",
+      "valid": true
+    },
+    {
+      "id": "bvo-7f9-6yj-phk",
+      "valid": true
+    },
+    {
+      "id": "3rt-k7j-g9d-9pw",
+      "valid": true
+    },
+    {
+      "id": "fvg-k6d-cya-w57",
+      "valid": true
+    },
+    {
+      "id": "uzl-zla-b5p-6j8",
+      "valid": true
+    }
+  ]
+}

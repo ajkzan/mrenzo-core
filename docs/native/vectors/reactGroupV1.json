@@ -1,0 +1,245 @@
+{
+  "area": "reactGroupV1",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "A reaction in a room or channel is sealed under a key bound to the POST, so that reacting never makes a subscriber a Sender-Keys sender: mk = HKDF(ck_ctr, \"mrenzo-sender-msg\") (the post's message key); rk = HKDF(mk, \"mrenzo-sender-rx-v1\"); k_u = HKDF(rk, \"mrenzo-grx-v1|\" + groupId + \"|\" + postId + \"|\" + reactorUid).",
+    "blob = \"rx1:\" + b64(nonce(24) ‖ secretbox(k_u, nonce, UTF-8 react JSON)), ≤ 1024 bytes; react JSON = {\"t\":\"react\",\"id\",\"to\":<postId>,\"e\":[…],\"ts\"} padded with \"p\" to a multiple of 64 bytes, no caps. HKDF = HKDF-SHA256, 32-byte zero salt.",
+    "rk is derived when a post is sealed (from the chain key about to be used) and when it is opened (from the message key, also one taken from the skipped-key store), and is stored sealed beside the cached plaintext.",
+    "Register: last-writer-wins per (room, post, user) on the sender's RAW (ts, id), id compared as bytes; no clamping; a state stamped more than 24 h ahead of the receiver's clock is ignored and not stored.",
+    "Attribution rests on the server-stamped user id and on possession of rk — weaker than the sk2 signature of a post, accepted for emoji (03 §V3.7.6)."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "groupId": "abc-def-ghi-jkl",
+  "author": {
+    "uid": 1001,
+    "chainRngLabel": "rx/chain",
+    "chainKeyB64": "o6n1jEWXyLsWWy/XlIQj3oaHvftVUzFW0Bivpi2f2/o="
+  },
+  "posts": [
+    {
+      "rngLabel": "rx/post1",
+      "counter": 0,
+      "wire": "sk2:{\"v\":2,\"ctr\":0,\"n\":\"HN7VccOVGiGVyi37qvNDXsHJGCismu1h\",\"ct\":\"s/qmmta5IdyTjs6Y3xh+AK9VgrPZU56GBYSM8jzjHRQPwy0WaQ==\",\"sig\":\"s17Ghl0Ffg2lPopaDCR8xCBvLd/5JwFlO9JHUg47GDby7KB9jpq8AYJyr6keRmSOAFRbTxVtzATeDYsl7Zr2BQ==\"}",
+      "messageKeyB64": "4sXw3d9twUWn1rinjyVyTfe46DNgWpDCWUQm+dF/6QI=",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk="
+    },
+    {
+      "rngLabel": "rx/post2",
+      "counter": 1,
+      "wire": "sk2:{\"v\":2,\"ctr\":1,\"n\":\"cCXcJvjungfB9CGKtsN00gxvNa4/J4rz\",\"ct\":\"zGI+ZepzR48X7t/b5G8IJ3w7sfOHBxbUTHcBUt+2YRdeGyqbHg==\",\"sig\":\"AEhoVyakV5YxGCFMKs/a0POjhC7XLd1WUVHeAwEBn9P418dFwPQB8O/kVPVq/FeRVWEz1D5X4WQ02hKZSWcXDA==\"}",
+      "rkB64": "VKd6Po2B1vPDrZ2CqpvFV8oIeD98Eu3J4MPaEm4RY+w="
+    }
+  ],
+  "reaction": {
+    "postId": "9041",
+    "reactorUid": 1002,
+    "kUB64": "zQkjZZgLMs5CbedhCF+ly0h2vIYhKG16T7+c+Yo4oxU=",
+    "add": {
+      "rngLabel": "rx/blob1",
+      "id": "rx-1",
+      "e": [
+        "❤️"
+      ],
+      "ts": 1790000000000,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    "remove": {
+      "rngLabel": "rx/blob2",
+      "id": "rx-2",
+      "e": [],
+      "ts": 1790000000005,
+      "blob": "rx1:myXntVjRgMwB/Ywn9BhvRPfXJBH2trjq4Neki1Xbh2P3kGOSzt2JRl9r0ewEIuM91PfADAQaFoj1OBJsvMDB7NtANOKZmj6oMsKqMuG+Pgl9gH9oIMC7L2emqVo7ijxPFCVDZx/WKPapkNMa2ib+tKe/XhWmKSFtl/SrLbm4UOB/OFwUi0hyJTFtNyluvSzyVpcSMj8UnnyOFikWo9g6BsYOPGHdREFRHhSFAkqkoTaygw8/ERy2zcYwvfytXTuR9FozE7IfWtVeQlmNhyWqvXV55pBNUELrXsiPNkdmlNjctJcBoiS2/vfc8A+cZbO2QiV+bUBPa45t9L8qZRI8/Skcb8/kMmCGLIKvfjx1L99xeIgo2FdcpEJLudnDQ3169YBl76S7CD0Uqtny/z2343dfh0N+8/1szrVhx0Dix5v/TxUyjLt+KX4p9x4P+yuVkuYi9lsMMpqInskf0ZUuaiqf8sWqTTS0"
+    }
+  },
+  "negatives": [
+    {
+      "name": "the row re-attributed to another user",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1003,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    {
+      "name": "the row moved to another post",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9042",
+      "reactorUid": 1002,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    {
+      "name": "the row moved to another group",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "zzz-zzz-zzz-zzz",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    {
+      "name": "the reaction key of another post",
+      "rkB64": "VKd6Po2B1vPDrZ2CqpvFV8oIeD98Eu3J4MPaEm4RY+w=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    {
+      "name": "no prefix",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um08AcbF"
+    },
+    {
+      "name": "a flipped ciphertext character",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:YFGDhJTWk5ziGSMzSPkyl7YgBQf+137ah34KRbQolT9XrR8xAc/JsGxb4DRxH9H69MpYjJe15tclicbDVhDnXbQmczXFNhb0P3NaXv/JXiOy9UKSGoVYt3Z4gQHremN0XJY+wFlFYbP/n3T3AhQOf+qM+MxeU64i1wirqcfzsgt49RSi4Og0i7Ivi7lb66pL+0JSA1s3v2+9Q3eZxmM3wcJl49b4AWabTyDYs0ITUm4uXUQqzhbCzPrbqYuRtUiBjHjBPXXtM9ZsTaKy2phRfk2Z8NrsPGyMD5G70sC2QYLbl6PKb/pKqAv6FasuQrEVfumxNdp0D6nuX96yUPZLZh4y203aHjSxqVqN2ldJUqa6uBCOUMKSGRO1VunsyG5TLVKWHua609qhKwspzNgMB1cq3FQdC6OoAwR1kwhfIJ6sgP/Qbavmsx2KAir+1A3qkWrju/YgH6lADpZL42bzRLR5Um0AAcbF"
+    },
+    {
+      "name": "a react state that names another post",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHhUbQIve4+ROAVljUSzrIUnSNGGwcJv2mjViJERVSlas8gihDbdB4MzwJ6egiWfvJa9CSmD0RqUasu/fyNlg1fQ=="
+    },
+    {
+      "name": "another kind inside",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHmSXXhmLJvB/xMHLYqn6u+3SNGGwcJuyrjU/fHxsZmO0kmnIZY944KDdS8fA5CKvSNA=="
+    },
+    {
+      "name": "an unknown kind inside",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHSLpmBs54GJvXGmaLKhof8nSNGGwcJv+sgFffHxsZmO0kmnIZMg=="
+    },
+    {
+      "name": "a blob over 1024 bytes",
+      "rkB64": "6Eti0sAuGY/dQhZEPkmu0ai3Jrejj8Usjl+3fhhMNXk=",
+      "groupId": "abc-def-ghi-jkl",
+      "postId": "9041",
+      "reactorUid": 1002,
+      "blob": "rx1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+  ],
+  "register": [
+    {
+      "name": "first state",
+      "stored": null,
+      "new": {
+        "ts": 1790000000000,
+        "id": "rx-1"
+      },
+      "nowMs": 1790000000000,
+      "decision": "apply"
+    },
+    {
+      "name": "a newer state",
+      "stored": {
+        "ts": 1790000000000,
+        "id": "rx-1"
+      },
+      "new": {
+        "ts": 1790000000005,
+        "id": "rx-2"
+      },
+      "nowMs": 1790000000000,
+      "decision": "apply"
+    },
+    {
+      "name": "the older state arriving later (WS replay after HTTP backlog)",
+      "stored": {
+        "ts": 1790000000005,
+        "id": "rx-2"
+      },
+      "new": {
+        "ts": 1790000000000,
+        "id": "rx-1"
+      },
+      "nowMs": 1790000000000,
+      "decision": "keep"
+    },
+    {
+      "name": "a duplicate",
+      "stored": {
+        "ts": 1790000000005,
+        "id": "rx-2"
+      },
+      "new": {
+        "ts": 1790000000005,
+        "id": "rx-2"
+      },
+      "nowMs": 1790000000000,
+      "decision": "keep"
+    },
+    {
+      "name": "same ts: the larger id wins",
+      "stored": {
+        "ts": 1790000000000,
+        "id": "rx-1"
+      },
+      "new": {
+        "ts": 1790000000000,
+        "id": "rx-2"
+      },
+      "nowMs": 1790000000000,
+      "decision": "apply"
+    },
+    {
+      "name": "fast clock, B (newer) delivered first",
+      "stored": null,
+      "new": {
+        "ts": 1790010800001,
+        "id": "rx-b"
+      },
+      "nowMs": 1790000000000,
+      "decision": "apply"
+    },
+    {
+      "name": "fast clock, A (older) delivered second: it loses — no clamping",
+      "stored": {
+        "ts": 1790010800001,
+        "id": "rx-b"
+      },
+      "new": {
+        "ts": 1790010800000,
+        "id": "rx-a"
+      },
+      "nowMs": 1790000000000,
+      "decision": "keep"
+    },
+    {
+      "name": "more than 24 h ahead: ignored, nothing stored",
+      "stored": null,
+      "new": {
+        "ts": 1790086400001,
+        "id": "rx-z"
+      },
+      "nowMs": 1790000000000,
+      "decision": "tooFarAhead"
+    },
+    {
+      "name": "exactly 24 h ahead is accepted",
+      "stored": null,
+      "new": {
+        "ts": 1790086400000,
+        "id": "rx-y"
+      },
+      "nowMs": 1790000000000,
+      "decision": "apply"
+    }
+  ]
+}

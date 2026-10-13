@@ -1,0 +1,53 @@
+{
+  "area": "sealedSenderCert",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "uid and expires_at_ms MUST be JSON integers in [0, 2^53); each is parsed once and the same values feed the expiry check and the signed payload BE64(uid) ‖ BE64(exp) ‖ ASCII(sender_pub). Anything else is false.",
+    "The Go issuer is unchanged; certs are valid 24 h."
+  ],
+  "serverSigningPubB64": "p+hnllaAcRKrI+sYXpJh6QwiutRPmN2gBNSsLKPUjTw=",
+  "cases": {
+    "genuine": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":1790086400000,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": true
+    },
+    "expired": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":1790086400000,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790086400001,
+      "expected": false
+    },
+    "expPlus2pow64": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":1.8446745863795954e+19,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790086400001,
+      "expected": false
+    },
+    "expAsString": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":\"1790086400000\",\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": false
+    },
+    "expAsFloat": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":1790086400000.5,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": false
+    },
+    "expNegative": {
+      "certJson": "{\"uid\":1001,\"expires_at_ms\":-1,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": false
+    },
+    "uidAsString": {
+      "certJson": "{\"uid\":\"1001\",\"expires_at_ms\":1790086400000,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": false
+    },
+    "uidFloat": {
+      "certJson": "{\"uid\":1001.0,\"expires_at_ms\":1790086400000,\"sender_pub\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"sig\":\"N2kkJW/9VMEevaTGMbbmsUwNNWrDzcE76y3lZxgYlerPsMhYcZPEsxVyH/lfTcNd2drLvV+m+2qVnzyjj+e+Aw==\"}",
+      "nowMs": 1790000000000,
+      "expected": false
+    }
+  }
+}

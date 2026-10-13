@@ -1,0 +1,216 @@
+{
+  "area": "pttV1",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "chunk = nonce(24) ‖ secretbox(K, nonce, pt); pt = \"P1\" ‖ flags(1) ‖ BE32(seq) ‖ BE16(padLen) ‖ packets ‖ 0x00^padLen; packets = (BE16(len) ‖ packet)*, 1 ≤ len ≤ 4096, ≤ 512 packets, none only with LAST.",
+    "flags bit0 = LAST (the authenticated end of the transmission), every other bit 0; len(pt) is a multiple of 256 and ≤ 16 384; padLen ≤ 255; seq < 4096. The nonce is the 24 bytes drawn under the case's label.",
+    "Receiver state is keyed by (sender uid, transmission id); a sequence number is recorded only after its chunk opened under K and named the same seq inside the box. A transmission is complete only once a LAST chunk opened.",
+    "The key travels once per transmission as the typed plaintext {\"t\":\"ptt\",\"id\":<pttId>,\"ptt\":{\"v\":1,\"k\",\"codec\",\"sr\"}} (typedV11.json)."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+  "pttId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+  "txHex": "0f8fad5bd9cb469fa16570867728950e",
+  "keyObject": {
+    "v": 1,
+    "k": "QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=",
+    "codec": "opus",
+    "sr": 16000
+  },
+  "chunks": [
+    {
+      "rngLabel": "ptt/chunk/0",
+      "seq": 0,
+      "last": false,
+      "packetsHex": [
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021222324252627",
+        "1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40414243",
+        "3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f60616263646566"
+      ],
+      "plaintextLen": 256,
+      "plaintextHeadHex": "50310000000000007b",
+      "chunkB64": "IMaFr2fmwUDqIUkkeLNIhtIeEHI0d1RM23ttxauzQYGnsmkNhnNkZtFG8NKDXhCnnhpyNwaN2NZ/yGAt6WIIPZNOc9txBg+wwJz7TKniAufDSxODpFEP3UOYbe45dg+Td0YYNI6ujZMv8fAP3eBYYayzqu64x8mQgddxaVJMga/Nyn15KfUPAJSlVdorpGYWTD2L1m1ukPNPBwltzgdYcG33Sf2r3B+b1Xfd8xM4C21euFD3Ih8NIgAOg040DJZsonU9fAgTZbQH0yf/yO6pNOAma0E59VCCoPTzUcbAqxa17Op8ao/xgDdoyKKbvsy+1cot2zHyAFsgoXKjv65jUZLkZhxoPjBZyqIAspA2vK7k/xqVPzEF6dTgXB+T83U9a8SvxeLp1bY="
+    },
+    {
+      "rngLabel": "ptt/chunk/1",
+      "seq": 1,
+      "last": false,
+      "packetsHex": [
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4"
+      ],
+      "plaintextLen": 256,
+      "plaintextHeadHex": "503100000000010000",
+      "chunkB64": "odQjJ6vBxGKXAmZ+57c/ifa//FTrsrg432ibof6bm2xsvFPt1K/Y5474+S2YWde4YnLLBVVfr7oU0YXJ9sJZ/WAGYNaBsQYzLU4jbNWLp3mWaRULlIcv5W9eJsr555LCAcxuNrvkM8ikZP0mWcis7AhJub76F4qcMZDB/mlxnpt1vKTu8icKeFwI+9kaaP43MkoVJW2xIHy7cqmKw+lyVeEGOFvTCCtcWDcMmI/QTQyh1nFKRlw91jKn8ELbHQ2OjFwB+WuDVLntIHX6hdCiLXj05HkjZMZrgD7pAbJBmHBYaaiVR1FjO/YOzCFuUJYzqKR/ZWWwI1YJa00DagwCn7mC0aN1vaiZeMHsLoEjgwm5jQ276bM3jhS7KYmZ4IfRKZeDEy0LWRE="
+    },
+    {
+      "rngLabel": "ptt/chunk/2",
+      "seq": 2,
+      "last": false,
+      "packetsHex": [
+        "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5"
+      ],
+      "plaintextLen": 512,
+      "plaintextHeadHex": "5031000000000200ff",
+      "chunkB64": "O3j8ACyuDNwP0ZqWb/qGRboTPzCMVeId68K0/MyUaZXnYp8Xd1bVSKYXPvFbJC9T/DCIbz0Lo4FWKlzwAH4D5Cy70BK8oXhYFSvZr7nxVuWbVHSDZ0NwCyJsMph61bLGFTpcROxM9o4IeWtZwfEJg8UvdCisW9wGFFcNJLfrtwWwr3pIzmAfhXsMl/+uWz+DfH73SPwsKsMbsigRvZqvjmtBRKWvy/H8r/JeUFYg8Q5ytPhLkvDQRHkZGAy0hEOPTKaypoZKdsJlwSSNf3YBggsEYcq/SkhJFDlhSYqFgdqJfd3WSZ7rI2wjmcbnvDgci2yhuPz9rk//1Un9UQTEpYDhTbaNQI4X4iE0badOId74I7Yq2nn4gEr4MaIdIGKr3UHrSVIuLHvL8vwKPsysBe8v1NxQG4WtbVaiC/L7sdF0Gz7jZ8PD1R0DU44HeDy1lfm/uH2No0WSEqDwgmhT+W69N3wSUco3XhcElfiTXnburFjmnUsNCp1wdVLGvbyVbpBk2ekgkdw0bwrRX5VtOOgokdOzNN3DG/4Oa1zlJMstAyz+VYaYCB7yjbvPIRrpR8OluoxNhE0SIEdtj5r1ILJipyLqmT7KDD/nRv0OhLyD+CASVcLJt8hlgKpf7JsGDwS7HtYRl9TpQRUEvab6ckVCwFuCwo787txct1VI9G+aM5NVIkp/ba3U3ZvZqHSkqxUbYQwgDOtsVJIUSojIfwAFSASuMFjq"
+    },
+    {
+      "rngLabel": "ptt/chunk/3",
+      "seq": 3,
+      "last": true,
+      "packetsHex": [
+        "000102030405060708090a0b"
+      ],
+      "plaintextLen": 256,
+      "plaintextHeadHex": "5031010000000300e9",
+      "chunkB64": "Y3YUo/U66kmmbUUiigZqt8/8OWH+BiiGqGlG3ozm4sDFfIO1Lt30ykyw54LfS2Hy4cjqaz0buHRgTrnhsXovqDhuCbVZgI3IHICoYrvoAM4pAockKuIF4BG5KTTOCfQD5VZbNgP1GnMdqQQR4LONaDq6emF/0RlR8mV5uCROi2mPZ9qdfpqPNztSHGt57JUF1/mCCKrammq2dc1dQdEc6gcl7KS4nisLVg+Tl79kAc/c6MzmOMorO35aZ/7n8OSn5IV+zMAcrOFg2q7Js3RExBqRW87N/Y+9pSfXcCFxiMq/2nTZEtlzpkUJfb4dnjAZDXyHbG+kVhiihkz5RQ4zf8c3wCjqVzXEkuyBLBExhQDqqWVIZQygBF0w1xQwuR9M7HHoaw3jRds="
+    },
+    {
+      "rngLabel": "ptt/chunk/4",
+      "seq": 4,
+      "last": true,
+      "packetsHex": [],
+      "plaintextLen": 256,
+      "plaintextHeadHex": "5031010000000400f7",
+      "chunkB64": "QlM9WQs9OKfSjIZhVFI6rjQZl5Awywv0Qb4xCrojczVEfpq7G0R0UAlGiHn9PzBXZzSZfuoazSqVWrQ3iAQ4neGu4ZwHUbSQTV19mlaGb19ZSXKRN0GNdk8qA+CWgo9pI/rlXou5BB7u0Axmy6bX8hP+rcWhQezhkH4o3e5jaOThHHxnd2ijMpw3DZ6RqUuc6liF3N/KW/0mHOcIM3IqyaWrn5aX3qZDoHemvtPtIYqWcKU7gEB5oMcQDZG8FNcOXHqmkKy5NDJmoSrT0UrYRCoHmkmWHhVlEkM360KyLzdkHrTQpLRBLdyTQjzPm+4bklkb6n6MDM5L5sBuCzTRnQyhbecAc3qocNRNrDOibnNlzx3y6xBFZIAhbi+KrxAZ2Guiq9jeyCM="
+    }
+  ],
+  "negatives": [
+    {
+      "name": "another key",
+      "keyHex": "4343434343434343434343434343434343434343434343434343434343434343",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJsOr9IvhtRBlAitTD4cizLFQVk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "a flipped ciphertext bit",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJsOr9IvhtRBlAitTD4cizLFQVk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvE="
+    },
+    {
+      "name": "truncated to less than one bucket",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJsOr9IvhtRBlAitTD4cizLFQVk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWQ="
+    },
+    {
+      "name": "wrong magic",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJ+Zg4e79q2t4SisyoDJgAJlQWk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "a reserved flag bit",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJv12hrUffSu205NTTF3MVk1QVkXuRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "seq of 4096",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJIuYMvbWyVsJuOyQL6uMyVFQVk3uRdP78c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "a non-zero padding byte",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJk/AKZOS0TQg/qtVW1QO7nVQVk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvE="
+    },
+    {
+      "name": "padLen of 256",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJ3FbRpQUG1faqXVyQADwVo1QVk3uRZPn9mMhQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "padLen one short: the framing does not tile the packets",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJsLRfLfXNzNKRT3z85DLuWVQVk3uRZPn8cshQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "a zero-length packet",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJVrX7PiYGYlnsSqMOVJKTCFQVk3uRZPn8c8haNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "a packet length past the end",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJ7V+iYBKGm+Npp1RjsSz6AFQVk3uRZPn8c8f6NvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    },
+    {
+      "name": "plaintext not a multiple of the bucket",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJHIrPWiZLVOZPrKeE6Mu4n1QVk3uRZPn8c8hQNvVdFmFm12hH4Umcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJg=="
+    },
+    {
+      "name": "no packet without LAST",
+      "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+      "chunkB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJ+rvCZlyTvITvMrp7miOB/lQVk3uRZP78b8haNvRfFWVj0W9P6Emcdur7hvgiIZGdL2YsSNkdXyz2lLGYF8mFTCEFMEPZmp6XqywmsXZHkwTBvQsSvppDQFISmDBhGdcJ8Iq4v6JET7oeMnbLPDeN6I6ccZrFVQi4GoldP89brKbyhGTUTTYnwEbNaexwPOFGBwWQVf9uMz1OIlk5RK1pXuqG0dkXBpMYBZfnRBUnbWT9Mbia04H6ece6WrRESaT54rQ6vN/T28CSdUKwckUSR5Kws10HOyaRvx3rWgdKzdmFW4/u2FkS4Griuzm6X+iTgLsZM2PysrjP/FlMkiiBXz/shkX6oGYB2g3SzwJRJvA="
+    }
+  ],
+  "receiver": {
+    "sender": 1001,
+    "otherSender": 1003,
+    "otherSenderKeyHex": "6666666666666666666666666666666666666666666666666666666666666666",
+    "steps": [
+      {
+        "from": 1001,
+        "seq": 0,
+        "chunkB64": "IMaFr2fmwUDqIUkkeLNIhtIeEHI0d1RM23ttxauzQYGnsmkNhnNkZtFG8NKDXhCnnhpyNwaN2NZ/yGAt6WIIPZNOc9txBg+wwJz7TKniAufDSxODpFEP3UOYbe45dg+Td0YYNI6ujZMv8fAP3eBYYayzqu64x8mQgddxaVJMga/Nyn15KfUPAJSlVdorpGYWTD2L1m1ukPNPBwltzgdYcG33Sf2r3B+b1Xfd8xM4C21euFD3Ih8NIgAOg040DJZsonU9fAgTZbQH0yf/yO6pNOAma0E59VCCoPTzUcbAqxa17Op8ao/xgDdoyKKbvsy+1cot2zHyAFsgoXKjv65jUZLkZhxoPjBZyqIAspA2vK7k/xqVPzEF6dTgXB+T83U9a8SvxeLp1bY=",
+        "outcome": "opened first=true last=false complete=false",
+        "note": "first chunk"
+      },
+      {
+        "from": 1001,
+        "seq": 1,
+        "chunkB64": "IMaFr2fmwUDqIUkkeLNIhtIeEHI0d1RM23ttxauzQYGnsmkNhnNkZtFG8NKDXhCnnhpyNwaN2NZ/yGAt6WIIPZNOc9txBg+wwJz7TKniAufDSxODpFEP3UOYbe45dg+Td0YYNI6ujZMv8fAP3eBYYayzqu64x8mQgddxaVJMga/Nyn15KfUPAJSlVdorpGYWTD2L1m1ukPNPBwltzgdYcG33Sf2r3B+b1Xfd8xM4C21euFD3Ih8NIgAOg040DJZsonU9fAgTZbQH0yf/yO6pNOAma0E59VCCoPTzUcbAqxa17Op8ao/xgDdoyKKbvsy+1cot2zHyAFsgoXKjv65jUZLkZhxoPjBZyqIAspA2vK7k/xqVPzEF6dTgXB+T83U9a8SvxeLp1bY=",
+        "outcome": "rejected",
+        "note": "chunk 0 presented as number 1"
+      },
+      {
+        "from": 1001,
+        "seq": 2,
+        "chunkB64": "O3j8ACyuDNwP0ZqWb/qGRboTPzCMVeId68K0/MyUaZXnYp8Xd1bVSKYXPvFbJC9T/DCIbz0Lo4FWKlzwAH4D5Cy70BK8oXhYFSvZr7nxVuWbVHSDZ0NwCyJsMph61bLGFTpcROxM9o4IeWtZwfEJg8UvdCisW9wGFFcNJLfrtwWwr3pIzmAfhXsMl/+uWz+DfH73SPwsKsMbsigRvZqvjmtBRKWvy/H8r/JeUFYg8Q5ytPhLkvDQRHkZGAy0hEOPTKaypoZKdsJlwSSNf3YBggsEYcq/SkhJFDlhSYqFgdqJfd3WSZ7rI2wjmcbnvDgci2yhuPz9rk//1Un9UQTEpYDhTbaNQI4X4iE0badOId74I7Yq2nn4gEr4MaIdIGKr3UHrSVIuLHvL8vwKPsysBe8v1NxQG4WtbVaiC/L7sdF0Gz7jZ8PD1R0DU44HeDy1lfm/uH2No0WSEqDwgmhT+W69N3wSUco3XhcElfiTXnburFjmnUsNCp1wdVLGvbyVbpBk2ekgkdw0bwrRX5VtOOgokdOzNN3DG/4Oa1zlJMstAyz+VYaYCB7yjbvPIRrpR8OluoxNhE0SIEdtj5r1ILJipyLqmT7KDD/nRv0OhLyD+CASVcLJt8hlgKpf7JsGDwS7HtYRl9TpQRUEvab6ckVCwFuCwo787txct1VI9G+aM5NVIkp/ba3U3ZvZqHSkqxUbYQwgDOtsVJIUSojIfwAFSASuMFjq",
+        "outcome": "opened first=false last=false complete=false",
+        "note": "a gap is allowed"
+      },
+      {
+        "from": 1003,
+        "seq": 1,
+        "chunkB64": "odQjJ6vBxGKXAmZ+57c/ifa//FTrsrg432ibof6bm2xsvFPt1K/Y5474+S2YWde4YnLLBVVfr7oU0YXJ9sJZ/WAGYNaBsQYzLU4jbNWLp3mWaRULlIcv5W9eJsr555LCAcxuNrvkM8ikZP0mWcis7AhJub76F4qcMZDB/mlxnpt1vKTu8icKeFwI+9kaaP43MkoVJW2xIHy7cqmKw+lyVeEGOFvTCCtcWDcMmI/QTQyh1nFKRlw91jKn8ELbHQ2OjFwB+WuDVLntIHX6hdCiLXj05HkjZMZrgD7pAbJBmHBYaaiVR1FjO/YOzCFuUJYzqKR/ZWWwI1YJa00DagwCn7mC0aN1vaiZeMHsLoEjgwm5jQ276bM3jhS7KYmZ4IfRKZeDEy0LWRE=",
+        "outcome": "noKey",
+        "note": "another sender, no key under that sender"
+      },
+      {
+        "from": 1001,
+        "seq": 1,
+        "chunkB64": "Ep/uXvPDgBVyigKIsNS5Bb1WbXZYfCBQ2u0wvt2bvGG5PDmLsXsj0PNZP2BYrEIdLUiISOioUqW9giOgynPCg4A+xWsz8RImjcfSy4VMTLkGp55Axo5Rvq9GT0sN1VogNycq/Zwrcu/UoVb0Ma0iO6dtvsbULw+YGl2wlznjdZtmISyGuGR9xR57EgpsmxlVHhVRh60/SGSZJVJjTtuhvTZCFidPpjddqT+9Mv95ffAHi9O6Qzj/zBSnCTNmdewMv8LA2qx0Bb1DeCuxTU4ZFHy/wd6ksyXxA8e0lNuh4Ed25YsEy1DX3SzzncfrS8N5JxOYJ6a7b56YHDRwopUD/r3NaFaRS+JMMtDe30HQe20Ar3h1R5UyoutfPmwN/ZRPWG322yMjSpc=",
+        "outcome": "rejected",
+        "note": "her chunk for seq 1 presented as Alice's: not authentic, nothing recorded"
+      },
+      {
+        "from": 1001,
+        "seq": 1,
+        "chunkB64": "odQjJ6vBxGKXAmZ+57c/ifa//FTrsrg432ibof6bm2xsvFPt1K/Y5474+S2YWde4YnLLBVVfr7oU0YXJ9sJZ/WAGYNaBsQYzLU4jbNWLp3mWaRULlIcv5W9eJsr555LCAcxuNrvkM8ikZP0mWcis7AhJub76F4qcMZDB/mlxnpt1vKTu8icKeFwI+9kaaP43MkoVJW2xIHy7cqmKw+lyVeEGOFvTCCtcWDcMmI/QTQyh1nFKRlw91jKn8ELbHQ2OjFwB+WuDVLntIHX6hdCiLXj05HkjZMZrgD7pAbJBmHBYaaiVR1FjO/YOzCFuUJYzqKR/ZWWwI1YJa00DagwCn7mC0aN1vaiZeMHsLoEjgwm5jQ276bM3jhS7KYmZ4IfRKZeDEy0LWRE=",
+        "outcome": "opened first=false last=false complete=false",
+        "note": "Alice's real seq 1 still plays"
+      },
+      {
+        "from": 1001,
+        "seq": 1,
+        "chunkB64": "odQjJ6vBxGKXAmZ+57c/ifa//FTrsrg432ibof6bm2xsvFPt1K/Y5474+S2YWde4YnLLBVVfr7oU0YXJ9sJZ/WAGYNaBsQYzLU4jbNWLp3mWaRULlIcv5W9eJsr555LCAcxuNrvkM8ikZP0mWcis7AhJub76F4qcMZDB/mlxnpt1vKTu8icKeFwI+9kaaP43MkoVJW2xIHy7cqmKw+lyVeEGOFvTCCtcWDcMmI/QTQyh1nFKRlw91jKn8ELbHQ2OjFwB+WuDVLntIHX6hdCiLXj05HkjZMZrgD7pAbJBmHBYaaiVR1FjO/YOzCFuUJYzqKR/ZWWwI1YJa00DagwCn7mC0aN1vaiZeMHsLoEjgwm5jQ276bM3jhS7KYmZ4IfRKZeDEy0LWRE=",
+        "outcome": "duplicate",
+        "note": "its duplicate"
+      },
+      {
+        "from": 1001,
+        "seq": 3,
+        "chunkB64": "Y3YUo/U66kmmbUUiigZqt8/8OWH+BiiGqGlG3ozm4sDFfIO1Lt30ykyw54LfS2Hy4cjqaz0buHRgTrnhsXovqDhuCbVZgI3IHICoYrvoAM4pAockKuIF4BG5KTTOCfQD5VZbNgP1GnMdqQQR4LONaDq6emF/0RlR8mV5uCROi2mPZ9qdfpqPNztSHGt57JUF1/mCCKrammq2dc1dQdEc6gcl7KS4nisLVg+Tl79kAc/c6MzmOMorO35aZ/7n8OSn5IV+zMAcrOFg2q7Js3RExBqRW87N/Y+9pSfXcCFxiMq/2nTZEtlzpkUJfb4dnjAZDXyHbG+kVhiihkz5RQ4zf8c3wCjqVzXEkuyBLBExhQDqqWVIZQygBF0w1xQwuR9M7HHoaw3jRds=",
+        "outcome": "opened first=false last=true complete=true",
+        "note": "the LAST chunk"
+      },
+      {
+        "from": 1001,
+        "seq": 4,
+        "chunkB64": "QlM9WQs9OKfSjIZhVFI6rjQZl5Awywv0Qb4xCrojczVEfpq7G0R0UAlGiHn9PzBXZzSZfuoazSqVWrQ3iAQ4neGu4ZwHUbSQTV19mlaGb19ZSXKRN0GNdk8qA+CWgo9pI/rlXou5BB7u0Axmy6bX8hP+rcWhQezhkH4o3e5jaOThHHxnd2ijMpw3DZ6RqUuc6liF3N/KW/0mHOcIM3IqyaWrn5aX3qZDoHemvtPtIYqWcKU7gEB5oMcQDZG8FNcOXHqmkKy5NDJmoSrT0UrYRCoHmkmWHhVlEkM360KyLzdkHrTQpLRBLdyTQjzPm+4bklkb6n6MDM5L5sBuCzTRnQyhbecAc3qocNRNrDOibnNlzx3y6xBFZIAhbi+KrxAZ2Guiq9jeyCM=",
+        "outcome": "rejected",
+        "note": "nothing follows the authenticated end"
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "area": "meshV2",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Outer {\"v\":2,\"id\",\"ttl\",\"hops\",\"L\"?,\"mode\",\"ts\",\"b\"}; inner blob layout unchanged (04 §5).",
+    "binding = \"mrenzo-mesh-v2|\" + id|ts|from.uid|to|(toIdx or -)|ttl|(L or -)|mode|kind|payload, signed with the sender's ED; only hops is outside it.",
+    "Receiver: sig_pub MUST equal the PINNED signing key of from.uid (an unpinned sender's msg is held, its ACK dropped).",
+    "ACK payload = id + \".\" + b64(HMAC-SHA256(HKDF(sid, \"mrenzo-mesh-ack-v2\"), id))[..16], sid = the session the message was decrypted under.",
+    "to is 0 on the air: the recipient is addressed only by toIdx."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "msg": {
+    "rngLabel": "v3/mesh",
+    "nowMs": 1790000000000,
+    "payloadText": "{\"v\":3}",
+    "binding": "mrenzo-mesh-v2|m-1|1790000000000|1001|0|YH1ZEcRXI8I=|86400|4|pigeon|msg|AAAAB3sidiI6M32L1JzO05CfANFTwnu8BVC0TJST/EQqS4KVO2Wb+Gamyzt3zE3Xv/ImeGFXJnl4NW+GqnjYGGAoM+BVuSzHwEBVd5hTwbyEH4+IFTBgX0hEYDl6OhZ67GHkjsC39ovMBqTXF8sv3xVPxaGMSdhGJ3x17bktg0BaFNK4HXwM1/FnF2AOhkCg5LL+Y76+lW++pKnglAXJTa1XvkIri9qX0ryjZ4JqtQW0gLMVfDjCfPmsNX65XZvMDLPzLLzOoz+/UoQtYU/vGK7k976NZnsXsSpai2p2cIY7jXFxwzAvcDgiz1pyI/b1UEdZVKMk3voOQlFDuQrVAQ==",
+    "outerJson": "{\"v\":2,\"id\":\"m-1\",\"ttl\":86400,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAB3sidiI6M32L1JzO05CfANFTwnu8BVC0TJST/EQqS4KVO2Wb+Gamyzt3zE3Xv/ImeGFXJnl4NW+GqnjYGGAoM+BVuSzHwEBVd5hTwbyEH4+IFTBgX0hEYDl6OhZ67GHkjsC39ovMBqTXF8sv3xVPxaGMSdhGJ3x17bktg0BaFNK4HXwM1/FnF2AOhkCg5LL+Y76+lW++pKnglAXJTa1XvkIri9qX0ryjZ4JqtQW0gLMVfDjCfPmsNX65XZvMDLPzLLzOoz+/UoQtYU/vGK7k976NZnsXsSpai2p2cIY7jXFxwzAvcDgiz1pyI/b1UEdZVKMk3voOQlFDuQrVAVTxwx5lLXRXd0SqSE/+sLJni16i6i353G7vFmRT8alZyoPp1Av0EwG3rTnuVHrY3+zS+Hy3DPu2HrQO/om19Qo=\"}",
+    "envelopeJson": "{\"v\":2,\"id\":\"m-1\",\"ts\":1790000000000,\"ttl\":86400,\"hops\":0,\"mode\":\"pigeon\",\"from\":{\"uid\":1001,\"sig_pub\":\"cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=\"},\"to\":0,\"toIdx\":\"YH1ZEcRXI8I=\",\"payload\":\"AAAAB3sidiI6M32L1JzO05CfANFTwnu8BVC0TJST/EQqS4KVO2Wb+Gamyzt3zE3Xv/ImeGFXJnl4NW+GqnjYGGAoM+BVuSzHwEBVd5hTwbyEH4+IFTBgX0hEYDl6OhZ67GHkjsC39ovMBqTXF8sv3xVPxaGMSdhGJ3x17bktg0BaFNK4HXwM1/FnF2AOhkCg5LL+Y76+lW++pKnglAXJTa1XvkIri9qX0ryjZ4JqtQW0gLMVfDjCfPmsNX65XZvMDLPzLLzOoz+/UoQtYU/vGK7k976NZnsXsSpai2p2cIY7jXFxwzAvcDgiz1pyI/b1UEdZVKMk3voOQlFDuQrVAQ==\",\"sig\":\"VPHDHmUtdFd3RKpIT/6wsmeLXqLqLfncbu8WZFPxqVnKg+nUC/QTAbetOe5Uetjf7NL4fLcM+7YetA7+ibX1Cg==\",\"L\":4,\"padded\":true}"
+  },
+  "ack": {
+    "rngLabel": "v3/mesh-ack",
+    "sessionIdB64": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
+    "payload": "m-1.WTGmv0CPCymVXEZT",
+    "binding": "mrenzo-mesh-v2|4459dd43-0ed6-4f2c-a891-ca78fe996dc5|1790000000000|1002|0|-|4|-|realtime|ack|m-1.WTGmv0CPCymVXEZT",
+    "outerJson": "{\"v\":2,\"id\":\"4459dd43-0ed6-4f2c-a891-ca78fe996dc5\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFG0tMS5XVEdtdjBDUEN5bVZYRVpU+Wd9MS7R6zpNeRnBjFtiQAjmEvFz5VVTezlNFz8GXBzCwdcSxy4UoYmPZYRi0FdMPD1KRoyQFgxCg0rMBMizAw==\"}"
+  },
+  "rejected": [
+    "ttl",
+    "L",
+    "L removed",
+    "mode",
+    "toIdx",
+    "to",
+    "kind",
+    "v1",
+    "non-integer ts"
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "area": "capsV11",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "statement = {\"v\":1,\"uid\",\"caps\":{\"v\",\"f\"},\"ts\",\"sig\"}; canonical = \"mrenzo-caps-v1|\" + uid + \"|\" + caps.v + \"|\" + join(\",\", caps.f) + \"|\" + ts; sig = Ed25519(ED_uid, UTF-8(canonical)), verified strictly under the PINNED signing key of uid.",
+    "Accepted when: the shape is canonical (no duplicate key, ≤ 1 KiB, caps sorted and unique), uid is the expected peer, ts ≤ now + 5 min, ts ≥ the newest ts already accepted under this pin, and the signature verifies.",
+    "A statement is an optimisation: the server can withhold or replay it, never forge it. The same caps object rides in band on every plaintext of a 1:1 session."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "statement": {
+    "uid": 1001,
+    "capsJson": "{\"v\":2,\"f\":[\"pq\"]}",
+    "ts": 1790000000000,
+    "canonical": "mrenzo-caps-v1|1001|2|pq|1790000000000",
+    "json": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}"
+  },
+  "cases": [
+    {
+      "name": "valid",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "ok"
+    },
+    {
+      "name": "valid at the newest accepted ts",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 1790000000000,
+      "nowMs": 1790000000000,
+      "expect": "ok"
+    },
+    {
+      "name": "served for another user",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1002,
+      "pinnedEdB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "wrongUid"
+    },
+    {
+      "name": "not signed by the pinned key",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "badSignature"
+    },
+    {
+      "name": "replayed below the newest accepted ts",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 1790000000001,
+      "nowMs": 1790000000000,
+      "expect": "stale"
+    },
+    {
+      "name": "dated more than 5 minutes ahead",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1789999699999,
+      "expect": "future"
+    },
+    {
+      "name": "5 minutes ahead exactly is accepted",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1789999700000,
+      "expect": "ok"
+    },
+    {
+      "name": "a flag added after signing",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "badSignature"
+    },
+    {
+      "name": "the level raised after signing",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":3,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "badSignature"
+    },
+    {
+      "name": "caps not in canonical form",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"ptt\",\"pq\"]},\"ts\":1790000000000,\"sig\":\"VZ6owESpG1e/BjLZMHHU69HgYASJBCm5jk0uZgmztGEebRhyuvl2QWn6/fHAjZv4qAK53bhQd/PsFiXPWQdDAQ==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "malformed"
+    },
+    {
+      "name": "duplicate key",
+      "statement": "{\"v\":1,\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "malformed"
+    },
+    {
+      "name": "another statement version",
+      "statement": "{\"v\":2,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "malformed"
+    },
+    {
+      "name": "not JSON",
+      "statement": "caps",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "malformed"
+    },
+    {
+      "name": "over 1 KiB",
+      "statement": "{\"v\":1,\"uid\":1001,\"caps\":{\"v\":2,\"f\":[\"pq\"]},\"ts\":1790000000000,\"sig\":\"GxeA7Kvm8N2KpVAAGimJ+3W18p+6+71UDVdplnpCCGcUCCgj3hIXgj4h6qBQBT2YnMPo72Nm/bWmdsgVV1dGCg==\"}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ",
+      "expectUid": 1001,
+      "pinnedEdB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+      "minTs": 0,
+      "nowMs": 1790000000000,
+      "expect": "malformed"
+    }
+  ]
+}

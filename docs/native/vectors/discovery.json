@@ -1,0 +1,146 @@
+{
+  "comment": "Contact discovery (01-rest-api §9.3). rfc9497: RFC 9497 Appendix A.1.1 (OPRF ristretto255-SHA512, mode 0). mrenzo: inputs, OPRF outputs, tag = output[0:16], key = output[32:64], buckets (first N bits of the tag), and the sealed profile box = nonce ‖ AES-256-GCM(key, nonce, profile JSON, aad = boxAad). Regenerate: DISCOVERY_VECTORS_WRITE=1 go test ./internal/discovery.",
+  "rfc9497": {
+    "identifier": "ristretto255-SHA512",
+    "mode": 0,
+    "groupDST": "48617368546f47726f75702d4f50524656312d002d72697374726574746f3235352d534841353132",
+    "skSm": "5ebcea5ee37023ccb9fc2d2019f9d7737be85591ae8652ffa9ef0f4d37063b0e",
+    "vectors": [
+      {
+        "Input": "00",
+        "Blind": "64d37aed22a27f5191de1c1d69fadb899d8862b58eb4220029e036ec4c1f6706",
+        "BlindedElement": "609a0ae68c15a3cf6903766461307e5c8bb2f95e7e6550e1ffa2dc99e412803c",
+        "EvaluationElement": "7ec6578ae5120958eb2db1745758ff379e77cb64fe77b0b2d8cc917ea0869c7e",
+        "Output": "527759c3d9366f277d8c6020418d96bb393ba2afb20ff90df23fb7708264e2f3ab9135e3bd69955851de4b1f9fe8a0973396719b7912ba9ee8aa7d0b5e24bcf6"
+      },
+      {
+        "Input": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+        "Blind": "64d37aed22a27f5191de1c1d69fadb899d8862b58eb4220029e036ec4c1f6706",
+        "BlindedElement": "da27ef466870f5f15296299850aa088629945a17d1f5b7f5ff043f76b3c06418",
+        "EvaluationElement": "b4cbf5a4f1eeda5a63ce7b77c7d23f461db3fcab0dd28e4e17cecb5c90d02c25",
+        "Output": "f4a74c9c592497375e796aa837e907b1a045d34306a749db9f34221f7e750cb4f2a6413a6bf6fa5e19ba6348eb673934a722a7ede2e7621306d18951e7cf2c73"
+      }
+    ]
+  },
+  "mrenzo": {
+    "sk": "e5e0eac8487107ac3fea37f1ebeeeb668f55930985348a796c29aa5e0d5b910b",
+    "boxAad": "mrenzo-discovery-v1",
+    "cases": [
+      {
+        "label": "email",
+        "kind": "email",
+        "raw": "  Alice@Example.COM ",
+        "input": "email:alice@example.com",
+        "blind": "531e5757aecefbd877ff32f0ea9535ca514238daf915718aaae38b730ac0b403",
+        "blinded": "0a82c40849532bf58baca4e18148b1bb5e8763e6600e7aef20fcae428ba4544e",
+        "evaluated": "ee266b8690601bb8e094cc3bbe7084e443f9fa426c823019c2abf5bff0e33e6a",
+        "output": "1463e2008c7017155ffba10e194e3847282b8073c360e334dcf2ea343ce4f122d6988fdc74cfedf46ad5b4ad0d8cfa051b5e2ae9e9d406ebe3d1dfb1e02eaee3",
+        "tag": "1463e2008c7017155ffba10e194e3847",
+        "key": "d6988fdc74cfedf46ad5b4ad0d8cfa051b5e2ae9e9d406ebe3d1dfb1e02eaee3",
+        "bucket4": 1,
+        "bucket16": 5219,
+        "profile": {
+          "id": 23,
+          "username": "alice",
+          "displayName": "Alice",
+          "publicKey": "pk-alice",
+          "avatarUrl": "/api/files/avatars/a.jpg"
+        },
+        "nonce": "ae3b704ef32b943d5cc8e4d5",
+        "box": "ae3b704ef32b943d5cc8e4d59b46b26bd25c30c8162d2998dea609cffb00e9249f0554d42f702685f42ea2c5fad4f6885ed45bda0f20cbc08ecaba3d0344f1f400e87b9fd2f1cce54214ee9d21200ac8ba7464d1fc663910b1bbc40e7243f6a540ef468933a109eae5acd84ce02d8ff39a0e6033a887600093ff66fd093d5d7e05332cc6d15115f4b8114904"
+      },
+      {
+        "label": "phone",
+        "kind": "phone",
+        "raw": "+7 (912) 345-67-89",
+        "input": "phone:79123456789",
+        "blind": "869b63c5274f22f652900ef23a7007fd383c4090c749bcf81514d187b9e65008",
+        "blinded": "7caa06a9bfd0cad46d0e2c7a641ded025ef41a75ace0823df126d1c4b1f58d35",
+        "evaluated": "7c7f700003ff4f83fad53c464e51cfafcc3a05d430ee95a56819f5930f091e1d",
+        "output": "73f0d142589fe4db6dc9e3e1c7f82f0132f1e4e7fa14ab1943e3e131c9d2409ff99256168f8af8447c115e8a86da5febdd396a57102a6eb6530f2357be96d555",
+        "tag": "73f0d142589fe4db6dc9e3e1c7f82f01",
+        "key": "f99256168f8af8447c115e8a86da5febdd396a57102a6eb6530f2357be96d555",
+        "bucket4": 7,
+        "bucket16": 29680,
+        "profile": {
+          "id": 24,
+          "username": "p79123456789",
+          "displayName": "Борис"
+        },
+        "nonce": "fdd66e4598797048bbc6ab3c",
+        "box": "fdd66e4598797048bbc6ab3c8732e74a3d01a3817fff85abfa81e4fb9b35f1426e2e42b4059d6295872666578964604b2c5115f59bca67dc2df4b7e03a7bad949c7c71d5367b670e0576afa5d0534757c0fffb1f3e585089d718"
+      },
+      {
+        "label": "cyrillic email",
+        "kind": "email",
+        "raw": "Ольга@Пример.рф",
+        "input": "email:Ольга@Пример.рф",
+        "blind": "a3c61f6dd71b153f6190066d9c4dbf2256503bf95cd91d90ffc988a3c965550e",
+        "blinded": "ceeca69389fbf91fccd8be2f420af3a856ba9362ae81664b76c421bdb8e6233a",
+        "evaluated": "7e0aab7cd46034e2b70973b0be2c38fcb46119743d24953b113cdd9c18da9873",
+        "output": "e9dd97388673c326854949835256bb6aff870c86d9fbfd920ea6a570b2da138112ca06ffacbbc84ccc821a5fc129f62df52aad3313d59c444a85b7fa49dc9d2f",
+        "tag": "e9dd97388673c326854949835256bb6a",
+        "key": "12ca06ffacbbc84ccc821a5fc129f62df52aad3313d59c444a85b7fa49dc9d2f",
+        "bucket4": 14,
+        "bucket16": 59869,
+        "profile": {
+          "id": 25,
+          "username": "olga",
+          "displayName": "Ольга"
+        },
+        "nonce": "b53bf33cd953b0d805834044",
+        "box": "b53bf33cd953b0d80583404425ff3c3cfb5106e54429f7a4588dc2ec8c7e6faa0dc713e12dad48df9b8cf7eeef687a5a9dd0eaed2430c494faafb110669420393a4ccfdb04c2348b18bdbbdb66c0c612e6a1"
+      },
+      {
+        "label": "no address",
+        "kind": "email",
+        "raw": "not an address",
+        "input": "",
+        "bucket4": 0,
+        "bucket16": 0
+      },
+      {
+        "label": "no digits",
+        "kind": "phone",
+        "raw": "call me",
+        "input": "",
+        "bucket4": 0,
+        "bucket16": 0
+      }
+    ]
+  },
+  "prefixBits": [
+    {
+      "entries": 0,
+      "bits": 0
+    },
+    {
+      "entries": 1,
+      "bits": 0
+    },
+    {
+      "entries": 4096,
+      "bits": 0
+    },
+    {
+      "entries": 4097,
+      "bits": 1
+    },
+    {
+      "entries": 8192,
+      "bits": 1
+    },
+    {
+      "entries": 8193,
+      "bits": 2
+    },
+    {
+      "entries": 1048576,
+      "bits": 8
+    },
+    {
+      "entries": 1073741824,
+      "bits": 16
+    }
+  ]
+}

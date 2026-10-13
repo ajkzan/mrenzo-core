@@ -1,0 +1,493 @@
+{
+  "area": "typedV11",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Mandatory for every kind: a JSON object ≤ 48 KiB, no duplicate key at any depth, \"t\" a string, \"id\" a non-empty string. Everything else that authenticates is `unsupported` — an outcome, never a decrypt failure.",
+    "Soft keys on every kind, parsed leniently (malformed = absent): caps {\"v\":2..65535,\"f\":[tokens]}, alt (≤ 256 UTF-16 units), p (padding, ignored); on a chat: nearby with op invite.",
+    "Serialization: the kind's own keys (for a level-1 kind byte for byte what 1.0.0 writes), then nearby, alt, caps, p. A react is padded with \"p\":\"<spaces>\" to a multiple of 64 UTF-8 bytes.",
+    "Level-2 kinds (react, nearby, ptt) never carry body, editOf, reply, fwd, expire or story, and never travel in a field a 1.0.0 client feeds to its ratchet (the outer table: one carrier per kind)."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "caps": {
+    "canonical": [
+      {
+        "flags": [],
+        "json": "{\"v\":2}"
+      },
+      {
+        "flags": [
+          "pq"
+        ],
+        "json": "{\"v\":2,\"f\":[\"pq\"]}"
+      },
+      {
+        "flags": [
+          "ptt",
+          "pq"
+        ],
+        "json": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}"
+      }
+    ],
+    "lenient": [
+      {
+        "in": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}",
+        "out": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}"
+      },
+      {
+        "in": "{\"v\":2}",
+        "out": "{\"v\":2}"
+      },
+      {
+        "in": "{\"v\":7,\"f\":[\"ptt\",\"pq\",\"pq\",\"BAD\",\"-x\",7,\"x-1\"],\"future\":true}",
+        "out": "{\"v\":7,\"f\":[\"pq\",\"ptt\",\"x-1\"]}"
+      },
+      {
+        "in": "{\"v\":2,\"f\":\"pq\"}",
+        "out": "{\"v\":2}"
+      },
+      {
+        "in": "{\"v\":1}",
+        "out": null
+      },
+      {
+        "in": "{\"v\":65536}",
+        "out": null
+      },
+      {
+        "in": "{\"v\":2.0}",
+        "out": null
+      },
+      {
+        "in": "{\"v\":\"2\"}",
+        "out": null
+      },
+      {
+        "in": "{\"f\":[\"pq\"]}",
+        "out": null
+      },
+      {
+        "in": "[\"pq\"]",
+        "out": null
+      },
+      {
+        "in": "2",
+        "out": null
+      }
+    ]
+  },
+  "built": [
+    {
+      "name": "chat",
+      "own": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}",
+      "padBlock": null,
+      "json": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}"
+    },
+    {
+      "name": "chat+caps",
+      "own": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}",
+      "padBlock": null,
+      "json": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "name": "chat+nearby invite+alt+caps",
+      "own": "{\"t\":\"chat\",\"id\":\"m-2\",\"body\":\"Давай найдёмся\"}",
+      "padBlock": null,
+      "json": "{\"t\":\"chat\",\"id\":\"m-2\",\"body\":\"Давай найдёмся\",\"nearby\":{\"v\":1,\"op\":\"invite\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000},\"alt\":\"fallback\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "name": "hello+caps",
+      "own": "{\"t\":\"hello\",\"id\":\"h-1\"}",
+      "padBlock": null,
+      "json": "{\"t\":\"hello\",\"id\":\"h-1\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "name": "react",
+      "own": "{\"t\":\"react\",\"id\":\"rx-1\",\"to\":\"m-1\",\"e\":[\"❤️\"],\"ts\":1790000000000}",
+      "padBlock": 64,
+      "json": "{\"t\":\"react\",\"id\":\"rx-1\",\"to\":\"m-1\",\"e\":[\"❤️\"],\"ts\":1790000000000,\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]},\"p\":\"                                                                                                                                                                                                                   \"}"
+    },
+    {
+      "name": "react removed",
+      "own": "{\"t\":\"react\",\"id\":\"rx-2\",\"to\":\"m-1\",\"e\":[],\"ts\":1790000000001}",
+      "padBlock": 64,
+      "json": "{\"t\":\"react\",\"id\":\"rx-2\",\"to\":\"m-1\",\"e\":[],\"ts\":1790000000001,\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]},\"p\":\"                                                                                                                                                                                                                           \"}"
+    },
+    {
+      "name": "react, the longest e",
+      "own": "{\"t\":\"react\",\"id\":\"rx-3\",\"to\":\"m-1\",\"e\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],\"ts\":1790000000002}",
+      "padBlock": 64,
+      "json": "{\"t\":\"react\",\"id\":\"rx-3\",\"to\":\"m-1\",\"e\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],\"ts\":1790000000002,\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]},\"p\":\"                   \"}"
+    },
+    {
+      "name": "nearby accept",
+      "own": "{\"t\":\"nearby\",\"id\":\"nb-1\",\"nearby\":{\"v\":1,\"op\":\"accept\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000,\"tok\":\"paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpQ==\"}}",
+      "padBlock": null,
+      "json": "{\"t\":\"nearby\",\"id\":\"nb-1\",\"nearby\":{\"v\":1,\"op\":\"accept\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000,\"tok\":\"paWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpQ==\"},\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "name": "nearby stop",
+      "own": "{\"t\":\"nearby\",\"id\":\"nb-2\",\"nearby\":{\"v\":1,\"op\":\"stop\",\"ns\":\"EREREREREREREREREREREQ==\",\"why\":\"ended\"}}",
+      "padBlock": null,
+      "json": "{\"t\":\"nearby\",\"id\":\"nb-2\",\"nearby\":{\"v\":1,\"op\":\"stop\",\"ns\":\"EREREREREREREREREREREQ==\",\"why\":\"ended\"},\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "name": "ptt",
+      "own": "{\"t\":\"ptt\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":16000}}",
+      "padBlock": null,
+      "json": "{\"t\":\"ptt\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":16000},\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    }
+  ],
+  "classified": [
+    {
+      "name": "chat as 1.0.0 writes it",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}",
+      "result": {
+        "class": "typed",
+        "t": "chat",
+        "id": "m-1",
+        "level": 1,
+        "lossy": false,
+        "own": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}",
+        "caps": null,
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "chat with caps",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}",
+      "result": {
+        "class": "typed",
+        "t": "chat",
+        "id": "m-1",
+        "level": 1,
+        "lossy": false,
+        "own": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"Привет\"}",
+        "caps": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}",
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "chat with an invite",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m-2\",\"body\":\"Давай найдёмся\",\"nearby\":{\"v\":1,\"op\":\"invite\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000},\"alt\":\"fallback\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}",
+      "result": {
+        "class": "typed",
+        "t": "chat",
+        "id": "m-2",
+        "level": 1,
+        "lossy": false,
+        "own": "{\"t\":\"chat\",\"id\":\"m-2\",\"body\":\"Давай найдёмся\"}",
+        "caps": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}",
+        "alt": "fallback",
+        "nearbyInvite": "{\"v\":1,\"op\":\"invite\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000}"
+      }
+    },
+    {
+      "name": "react",
+      "plaintext": "{\"t\":\"react\",\"id\":\"rx-1\",\"to\":\"m-1\",\"e\":[\"❤️\"],\"ts\":1790000000000,\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]},\"p\":\"                                                                                                                                                                                                                   \"}",
+      "result": {
+        "class": "typed",
+        "t": "react",
+        "id": "rx-1",
+        "level": 2,
+        "lossy": true,
+        "own": "{\"t\":\"react\",\"id\":\"rx-1\",\"to\":\"m-1\",\"e\":[\"❤️\"],\"ts\":1790000000000}",
+        "caps": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}",
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "ptt",
+      "plaintext": "{\"t\":\"ptt\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":16000},\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}",
+      "result": {
+        "class": "typed",
+        "t": "ptt",
+        "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "level": 2,
+        "lossy": true,
+        "own": "{\"t\":\"ptt\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":16000}}",
+        "caps": "{\"v\":2,\"f\":[\"pq\",\"ptt\"]}",
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "soft keys malformed: absent, never a failure",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m\",\"body\":\"b\",\"caps\":{\"v\":\"2\"},\"alt\":7,\"nearby\":{\"v\":1,\"op\":\"accept\"},\"p\":5}",
+      "result": {
+        "class": "typed",
+        "t": "chat",
+        "id": "m",
+        "level": 1,
+        "lossy": false,
+        "own": "{\"t\":\"chat\",\"id\":\"m\",\"body\":\"b\"}",
+        "caps": null,
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "unknown top-level keys are ignored",
+      "plaintext": "{\"t\":\"hello\",\"id\":\"h\",\"future\":{\"a\":[1,2]}}",
+      "result": {
+        "class": "typed",
+        "t": "hello",
+        "id": "h",
+        "level": 1,
+        "lossy": false,
+        "own": "{\"t\":\"hello\",\"id\":\"h\"}",
+        "caps": null,
+        "alt": null,
+        "nearbyInvite": null
+      }
+    },
+    {
+      "name": "unknown t",
+      "plaintext": "{\"t\":\"poll\",\"id\":\"p-1\",\"q\":\"?\",\"alt\":\"Опрос\",\"caps\":{\"v\":3,\"f\":[\"polls\"]}}",
+      "result": {
+        "class": "unsupported",
+        "t": "poll",
+        "id": "p-1",
+        "alt": "Опрос",
+        "caps": "{\"v\":3,\"f\":[\"polls\"]}"
+      }
+    },
+    {
+      "name": "unknown t, no id",
+      "plaintext": "{\"t\":\"poll\"}",
+      "result": {
+        "class": "unsupported",
+        "t": "poll",
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "known t, missing body",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m\"}",
+      "result": {
+        "class": "unsupported",
+        "t": "chat",
+        "id": "m",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "known t, a field another kind owns",
+      "plaintext": "{\"t\":\"hello\",\"id\":\"h\",\"body\":\"b\"}",
+      "result": {
+        "class": "unsupported",
+        "t": "hello",
+        "id": "h",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "level-2 kind with a level-1 field",
+      "plaintext": "{\"t\":\"react\",\"id\":\"r\",\"to\":\"m\",\"e\":[],\"ts\":5,\"body\":\"x\"}",
+      "result": {
+        "class": "unsupported",
+        "t": "react",
+        "id": "r",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "react: four emoji",
+      "plaintext": "{\"t\":\"react\",\"id\":\"r\",\"to\":\"m\",\"e\":[\"1\",\"2\",\"3\",\"4\"],\"ts\":5}",
+      "result": {
+        "class": "unsupported",
+        "t": "react",
+        "id": "r",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "react: a duplicate in the set",
+      "plaintext": "{\"t\":\"react\",\"id\":\"r\",\"to\":\"m\",\"e\":[\"a\",\"a\"],\"ts\":5}",
+      "result": {
+        "class": "unsupported",
+        "t": "react",
+        "id": "r",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "react: ts not an integer",
+      "plaintext": "{\"t\":\"react\",\"id\":\"r\",\"to\":\"m\",\"e\":[],\"ts\":5.0}",
+      "result": {
+        "class": "unsupported",
+        "t": "react",
+        "id": "r",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "nearby kind carrying an invite",
+      "plaintext": "{\"t\":\"nearby\",\"id\":\"n\",\"nearby\":{\"v\":1,\"op\":\"invite\",\"ns\":\"EREREREREREREREREREREQ==\",\"exp\":1790000300000}}",
+      "result": {
+        "class": "unsupported",
+        "t": "nearby",
+        "id": "n",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "ptt: id is not a UUIDv4",
+      "plaintext": "{\"t\":\"ptt\",\"id\":\"abc\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":16000}}",
+      "result": {
+        "class": "unsupported",
+        "t": "ptt",
+        "id": "abc",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "ptt: sample rate out of range",
+      "plaintext": "{\"t\":\"ptt\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"ptt\":{\"v\":1,\"k\":\"QkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkI=\",\"codec\":\"opus\",\"sr\":4000}}",
+      "result": {
+        "class": "unsupported",
+        "t": "ptt",
+        "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "duplicate key at the top",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m\",\"id\":\"m\",\"body\":\"b\"}",
+      "result": {
+        "class": "unsupported",
+        "t": null,
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "duplicate key in depth",
+      "plaintext": "{\"t\":\"file\",\"id\":\"m\",\"body\":{\"fileId\":\"a\",\"fileId\":\"b\"}}",
+      "result": {
+        "class": "unsupported",
+        "t": null,
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "not an object",
+      "plaintext": "[\"chat\"]",
+      "result": {
+        "class": "unsupported",
+        "t": null,
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "not JSON",
+      "plaintext": "hello",
+      "result": {
+        "class": "unsupported",
+        "t": null,
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    },
+    {
+      "name": "empty id",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"\",\"body\":\"b\"}",
+      "result": {
+        "class": "unsupported",
+        "t": "chat",
+        "id": null,
+        "alt": null,
+        "caps": null
+      }
+    }
+  ],
+  "outer": [
+    {
+      "kind": "chat",
+      "outerId": "m-1",
+      "p2p(no action)": true,
+      "p2p(session-hello)": false,
+      "edit": false,
+      "ctl": false,
+      "meshCtl": false,
+      "ptt": false,
+      "ctl(other id)": false
+    },
+    {
+      "kind": "hello",
+      "outerId": "h-1",
+      "p2p(no action)": false,
+      "p2p(session-hello)": true,
+      "edit": false,
+      "ctl": false,
+      "meshCtl": false,
+      "ptt": false,
+      "ctl(other id)": false
+    },
+    {
+      "kind": "edit",
+      "outerId": "m-1",
+      "p2p(no action)": false,
+      "p2p(session-hello)": false,
+      "edit": true,
+      "ctl": false,
+      "meshCtl": false,
+      "ptt": false,
+      "ctl(other id)": false
+    },
+    {
+      "kind": "react",
+      "outerId": "rx-1",
+      "p2p(no action)": false,
+      "p2p(session-hello)": false,
+      "edit": false,
+      "ctl": true,
+      "meshCtl": false,
+      "ptt": false,
+      "ctl(other id)": false
+    },
+    {
+      "kind": "nearby accept",
+      "outerId": "nb-1",
+      "p2p(no action)": false,
+      "p2p(session-hello)": false,
+      "edit": false,
+      "ctl": true,
+      "meshCtl": true,
+      "ptt": false,
+      "ctl(other id)": false
+    },
+    {
+      "kind": "ptt",
+      "outerId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+      "p2p(no action)": false,
+      "p2p(session-hello)": false,
+      "edit": false,
+      "ctl": false,
+      "meshCtl": false,
+      "ptt": true,
+      "ctl(other id)": false
+    }
+  ]
+}

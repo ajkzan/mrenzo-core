@@ -1,0 +1,68 @@
+{
+  "area": "offlineSeal",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "internal/server/seal.go (sealOfflineBlob / openOfflineBlob)",
+    "mobile/src/utils/crypto.ts:300-315 (openSealedOffline)",
+    "mobile/src/App.tsx:1126-1145 (p2p-pending-sealed), App.tsx:1621-1630 (storage offline fetch)"
+  ],
+  "notes": [
+    "Produced by the SERVER (Go, crypto/rand — not injectable), opened by clients. The blob below is built in-test with the identical construction (nacl.box ≡ Go x/crypto/nacl/box.Seal) and opened by the PRODUCTION openSealedOffline.",
+    "Format: \"OSB1:\" + b64( ephemeralPub(32) || nonce(24) || box(plaintext, nonce, recipientIdentityPub, ephemeralPriv) ). ephemeral pub FIRST — opposite of sealed-sender (sealedSender.json).",
+    "A string WITHOUT the \"OSB1:\" prefix is legacy plaintext JSON and is returned unchanged. Marked but unopenable → null (client drops it).",
+    "Plaintext = the JSON the server would otherwise have delivered (p2p-message data incl. fromUserId/messageId/text/…, plus optional \"__type\"); the object here is illustrative, the crypto is exact."
+  ],
+  "keys": {
+    "bob": {
+      "uid": 2002,
+      "x25519PrivB64": "/jHUBE5Mh4TUdmo67V9Um6Z0UI96nvyeCY57YWxrfas=",
+      "x25519PubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "ed25519PrivB64": "UAYNhyuCdVJ/fk3U2ZI2vQzaSWwicGSOHKkZ/QMHlpIgsfMfb+HJX+vO6vlHCZ406/BzA5uXKxAwMiwANYPwZQ==",
+      "ed25519PubB64": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU="
+    }
+  },
+  "innerJson": "{\"fromUserId\":1001,\"messageId\":\"m-offline-1\",\"text\":\"{\\\"v\\\":2,\\\"dh\\\":\\\"…\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"…\\\"}\",\"encrypted\":true}",
+  "rng": {
+    "label": "offlineSeal/server.sealOfflineBlob",
+    "draws": [
+      {
+        "n": 32,
+        "hex": "9fa77776743cfa4ef5a7eb9ab26d162548dad06769739d98043b1b8c40c52113"
+      },
+      {
+        "n": 24,
+        "hex": "7f9b7417628c798482e2e696bd5b27e5df8bcc86bfb96b37"
+      }
+    ]
+  },
+  "sealed": "OSB1:i59rOENNt2QrZGh6tILuv98KRz9jRu+l0LxFmcl7eCB/m3QXYox5hILi5pa9Wyfl34vMhr+5azer8PRMTsvU11SpD0SgG3Nrw2fIv3Eyuq+KzemNe4XwNYX0UexyGK1FJczsVN2UEmmpiWJDL/JdSzCHzjzztWUuer/unAGkezkJH47QY1Dg5DJmi76TynHfl5ujoW2tzEV3NpSUzUHaNnkg3jUo9QPk7L/y45Krc5AOR2liu114f+snORWeekSoFSYrrPdXFnM=",
+  "layout": {
+    "ephemeralPubHex": "8b9f6b38434db7642b64687ab482eebfdf0a473f6346efa5d0bc4599c97b7820",
+    "nonceHex": "7f9b7417628c798482e2e696bd5b27e5df8bcc86bfb96b37",
+    "boxHex": "abf0f44c4ecbd4d754a90f44a01b736bc367c8bf7132baaf8acde98d7b85f03585f451ec7218ad4525ccec54dd941269a98962432ff25d4b3087ce3cf3b5652e7abfee9c01a47b39091f8ed06350e0e432668bbe93ca71df979ba3a16dadcc4577369494cd41da367920de3528f503e4ecbff2e392ab73900e476962bb5d787feb2739159e7a44a815262bacf7571673"
+  },
+  "openCases": [
+    {
+      "name": "legacy plaintext passes through",
+      "input": "{\"fromUserId\":1001,\"messageId\":\"m-offline-1\",\"text\":\"{\\\"v\\\":2,\\\"dh\\\":\\\"…\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"…\\\"}\",\"encrypted\":true}",
+      "expected": "{\"fromUserId\":1001,\"messageId\":\"m-offline-1\",\"text\":\"{\\\"v\\\":2,\\\"dh\\\":\\\"…\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"…\\\"}\",\"encrypted\":true}"
+    },
+    {
+      "name": "tampered box",
+      "input": "OSB1:i59rOENNt2QrZGh6tILuv98KRz9jRu+l0LxFmcl7eCB/m3QXYox5hILi5pa9Wyfl34vMhr+5azer8PRMzsvU11SpD0SgG3Nrw2fIv3Eyuq+KzemNe4XwNYX0UexyGK1FJczsVN2UEmmpiWJDL/JdSzCHzjzztWUuer/unAGkezkJH47QY1Dg5DJmi76TynHfl5ujoW2tzEV3NpSUzUHaNnkg3jUo9QPk7L/y45Krc5AOR2liu114f+snORWeekSoFSYrrPdXFnM=",
+      "expected": null
+    },
+    {
+      "name": "too short",
+      "input": "OSB1:i59rOENNt2QrZGh6tILuv98KRz9jRu+l0LxFmcl7eCB/m3QXYox5hILi5pa9Wyfl34vMhr+5azer8PRMTsvU11SpD0SgG3M=",
+      "expected": null
+    },
+    {
+      "name": "bad base64 after marker",
+      "input": "OSB1:@@@",
+      "expected": null
+    }
+  ]
+}

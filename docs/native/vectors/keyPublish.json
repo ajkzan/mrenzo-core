@@ -1,0 +1,30 @@
+{
+  "area": "keyPublish",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/services/api.ts:710-745 (uploadPublicKey)",
+    "storage/app/routes_keys.py:16,64-79 (verify)"
+  ],
+  "notes": [
+    "POST <STORAGE_BASE>/api/keys/publish. Body JSON = {\"publicKey\",\"signingPublicKey\",\"ts\",\"signature\"} — ts is a decimal STRING, signature = b64 Ed25519 over UTF-8 of `${publicKey}|${signingPublicKey}|${uid}|${ts}` (the two keys as their base64 strings).",
+    "Server (routes_keys.py) rebuilds the canonical string with the JWT user_id and rejects |now − ts| > 5 min (\"stale publish signature\") or a bad signature (401). Unsigned publishes are still accepted during rollout.",
+    "Signed with the NEW signing key being published (self-signature, no dependency on a previously stored key)."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "x25519PubB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "ed25519PrivB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "ed25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    }
+  },
+  "clockMs": 1758800000000,
+  "uid": 1001,
+  "path": "/api/keys/publish",
+  "method": "POST",
+  "bodyJson": "{\"publicKey\":\"ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=\",\"signingPublicKey\":\"YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=\",\"ts\":\"1758800000000\",\"signature\":\"SGwxd16J+7q//ddym54WQmnNRDJ3vBPeiPKda6DnuS/wui2pPFLN6lavHteEgILMSjD1QH1W1y4pzwNAfXhiAA==\"}",
+  "canonical": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=|YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=|1001|1758800000000"
+}

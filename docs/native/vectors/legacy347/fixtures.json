@@ -1,0 +1,51 @@
+{
+  "area": "legacy347",
+  "schema": 1,
+  "generator": "extracted from the build-324…348 RN-compatible vectors (ratchet.json, mesh.json, contactPair.json, senderKeys*.json, sdpSigning.json) when protocol v3 replaced them",
+  "notes": [
+    "Wire a build ≤ 348 produced. Build 349 MUST reject every one of these (03 §14, 16.5): no state change, no failure count.",
+    "Checked by native/core/tests/legacy_rejected.rs and the Swift suites."
+  ],
+  "ratchetV2Wire": "{\"v\":2,\"dh\":\"CVsyCALn7FGk2WdiBTS6MKFqeXw4QJx2HTCMxAbFtUM=\",\"pn\":0,\"n\":0,\"ct\":\"h9ILsiD6uC8e1JAh8QGFiVImADQ/ru12/VJ2txIILBGhveMbJDVpCbZhTjjTq1sV1A9NNu0iacXa9wqtfF5J\"}",
+  "meshV1OuterJson": "{\"v\":1,\"id\":\"msg-1758800000000-k3x9z\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1758800000000,\"b\":\"B2Lj9Fk0N38tRIWEGtLgwma0nO4ycKF9yM5owL8//PjqAAAAAAAAA+kAAAAAAAAH0kvLua3u+wo2AQAAAACUeyJ2IjoyLCJkaCI6InZnL2pXTHlzV0s0T21JakdhZkJlcCtZRk8vbFNLekpOZGRLNFFucGt3VE09IiwicG4iOjAsIm4iOjAsImN0IjoieGFjVE5SYXpWNmFEMTk0aWppVXdmZ0F3SU8xK2k0MmVIekpBZExCR1lOWS9WdHErZUNRZ2RLdjdQdGszR25aMUgrUT0ifSZ670HADfvtqRT1dJs/D/RcykH5Elj9U+dxP7riZYZ7wtQRxkQkmkYzSanga5WiJ0CzO/Exe811vh5OSMp3K568fw41nQLMsc1pe+IaEVtLf5WhjD1igWeSuNgsZC2OdQ8hEihEerkg31eB+NE+O0R6XoHmBHQXAgPqyrL9zRmrJszeuIU+t7eAFujdCqguTk4Qmy1Ugrl/JhKGrs5olfwZwKwSf26eDA==\"}",
+  "pairLinkV1": "mrenzo://pair/eyJ2IjoxLCJ1aWQiOjEwMDEsInVzZXJuYW1lIjoiYWxpY2UiLCJkaXNwbGF5TmFtZSI6ItCQ0LvQuNGB0LAiLCJpcGsiOiJveDF3U1c0QkFPNkVUR2JTUEJxQWEvYjVLV1dTRlI3elRjVDVlOEpLMkVrPSIsInNwayI6Ill1UDBXVFEzZnkxRWhZUWEwdURDWnJTYzdqSndvWDNJem1qQXZ6LzgrT289Iiwic2VlZCI6IitvSk1zZDV0ZEhJbWFGNEFZUFR1NFBLRlhBTnl6T24zU2lZKys1cHY1SEk9IiwidHMiOjE3NTg4MDAwMDAwMDB9",
+  "sk1Post": "sk1:{\"v\":1,\"ct\":\"vEs324pDLDhp9+iDSpkAPM0jLowR062eMzaw\",\"n\":\"GwxbFl1848UB4Pd1i4lPE/5+HzBkv6NW\",\"ctr\":0,\"sig\":\"Wcps5DrsiLX3Y/X72MLj+zXLcRO2VWM1Thcz5QAYFRrxsFHAfX19syeG5fxmuRY2XaMw6yO3o5om/tUGpUsyDw==\"}",
+  "skdmV1Json": "{\"v\":1,\"groupId\":\"ch_golden_01\",\"chainKey\":\"sHgLb2sBqWm3PK75mMksVC736VD8xcM3hWm98eILqCo=\",\"signingPub\":\"KbDJbYX9/dN9A44P9xjcBw5joHXrW4SWeHr6++oeL4c=\",\"startCounter\":0}",
+  "skdmTransport2Frame": {
+    "type": "p2p-message",
+    "data": {
+      "toUserId": 1002,
+      "messageId": "skdm-1",
+      "action": "sender-key-distribution",
+      "skdmTransport": 2,
+      "skdm": "{\"v\":2,\"dh\":\"CVsyCALn7FGk2WdiBTS6MKFqeXw4QJx2HTCMxAbFtUM=\",\"pn\":0,\"n\":0,\"ct\":\"h9ILsiD6uC8e1JAh8QGFiVImADQ/ru12/VJ2txIILBGhveMbJDVpCbZhTjjTq1sV1A9NNu0iacXa9wqtfF5J\"}"
+    }
+  },
+  "callOfferWithoutPvRb": {
+    "type": "call-offer",
+    "data": {
+      "type": "offer",
+      "sdp": "v=0\r\no=- 4611731400430051336 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1\r\na=msid-semantic: WMS golden\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 0.0.0.0\r\na=ice-ufrag:Gold\r\na=ice-pwd:goldenvectorsicepassword00\r\na=fingerprint:sha-256 33:90:78:62:B8:AE:B7:02:D9:60:DF:53:D6:7E:83:08:1F:71:64:8A:3C:23:1D:95:8E:77:2D:B3:45:A2:12:70\r\na=setup:actpass\r\na=mid:0\r\na=rtpmap:111 opus/48000/2\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=fingerprint:sha-256 33:90:78:62:B8:AE:B7:02:D9:60:DF:53:D6:7E:83:08:1F:71:64:8A:3C:23:1D:95:8E:77:2D:B3:45:A2:12:70\r\na=setup:actpass\r\na=mid:1\r\na=rtpmap:96 VP8/90000\r\n",
+      "sig": "AAAA",
+      "ts": 1758800000000,
+      "nonce": "AAAAAAAAAAAAAAAAAAAAAA==",
+      "fromUserId": 1001,
+      "callId": "c-1"
+    }
+  },
+  "typedPeerRatchetReset": {
+    "type": "peer-ratchet-reset",
+    "data": {
+      "userId": 1001
+    }
+  },
+  "unsignedRatchetReset": {
+    "type": "ratchet-reset",
+    "data": {
+      "peerUserId": 1002
+    }
+  },
+  "unsignedPublishBody": {
+    "publicKey": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek="
+  }
+}

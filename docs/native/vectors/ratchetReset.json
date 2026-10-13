@@ -1,0 +1,43 @@
+{
+  "area": "ratchetReset",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "canonical = \"mrenzo-ratchet-reset-v2|\" + from + \"|\" + to + \"|\" + ts + \"|\" + nonce + \"|\" + dh; sig = Ed25519(ED_from, canonical).",
+    "dh = the ratchet key (envelope `dh`) of the message that could not be decrypted; the receiver archives the LIVE session whose current or previous sending key is dh — anything else is a no-op (reset.noMatch), so a reset never loops.",
+    "Receiver: pinned + confirmed ED of the server-stamped sender, |now − ts| ≤ 10 min, nonce not among the last 32 seen from that peer."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "reset": {
+    "rngLabel": "v3/reset",
+    "from": 1001,
+    "to": 1002,
+    "dhB64": "CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=",
+    "canonical": "mrenzo-ratchet-reset-v2|1001|1002|1790000000000|dHahbrFbve0U08sLRDQdbg==|CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=",
+    "rrJson": "{\"v\":2,\"ts\":1790000000000,\"nonce\":\"dHahbrFbve0U08sLRDQdbg==\",\"dh\":\"CQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQk=\",\"sig\":\"tUkFiNSF4S0v62qm5veO3vUsl/KtVAyPZ95n/SVjt0yVhYrC5pqC/3E/BceSABh2TxBPZs6uo7nn8dyuTyxcBQ==\"}",
+    "verify": {
+      "ok": true,
+      "signedByBob": false,
+      "fromCarol": false,
+      "toCarol": false,
+      "otherDh": false,
+      "after10min": "stale"
+    }
+  }
+}

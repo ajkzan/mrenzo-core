@@ -1,0 +1,26 @@
+{
+  "area": "skippedCap",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "At most 1000 skipped keys per message, 2000 per session (oldest evicted first), and none older than 14 days (dropped on load and save).",
+    "Alice sends m0…m2004 (x3dhV2 withoutOpk); Bob receives n = 1000, 2000, 2002, 2004 in that order."
+  ],
+  "receiveOrder": [
+    1000,
+    2000,
+    2002,
+    2004
+  ],
+  "skippedAfterEach": [
+    1000,
+    1999,
+    2000,
+    2000
+  ],
+  "firstRemainingN": 1,
+  "maxSkippedTotal": 2000,
+  "maxSkipPerMessage": 1000,
+  "ttlMs": 1209600000
+}

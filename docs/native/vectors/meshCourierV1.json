@@ -1,0 +1,634 @@
+{
+  "area": "meshCourierV1",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "c = b64(0x01 ‖ kid ‖ eph_pub[32] ‖ box[25] ‖ csig[64]) (123 bytes, 164 characters), an outer key of a msg frame OUTSIDE the v2 binding; box = crypto_box(pt, nonce, courier_pub, eph_priv); pt = 0x01 ‖ BE64(to); nonce = SHA-256(\"mrenzo-courier-nonce-v1\" ‖ eph_pub ‖ courier_pub)[0..24].",
+    "csig = Ed25519(ED_from, UTF-8(\"mrenzo-courier-v1|\" + id + \"|\" + ts + \"|\" + from + \"|\" + kid + \"|\" + b64(SHA-256(inner blob bytes)) + \"|\" + b64(SHA-256(eph_pub ‖ box)))), verified strictly under the frame's own sig_pub. The builder draws the ephemeral secret (32 bytes).",
+    "EVERY node checks csig (no secret is needed): a capsule that does not verify is ABSENT — the frame stays valid, but the capsule is neither stored nor relayed (`relayKeeps`). So a bystander cannot put its own capsule in the place of the sender's.",
+    "Each negative: `frame` passes the strict frame check; `relayKeeps` = the check returns the capsule; `serverOpens` = opening it for key id `kid` with the private key `courierPrivB64` yields a recipient (never, in this list).",
+    "Server, per uploaded frame: strict frame check (meshV11.json, its own freshness window; this includes csig) → kind msg → kid known → open the box with the courier private key → to → sig_pub is the directory key of from → claim H(from|id) → route `routed` as if from had sent it.",
+    "A 1.0.0 node does not see c (it reads only the keys it knows); it verifies, delivers and ACKs the frame unchanged."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "nowMs": 1790000000000,
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    },
+    "carol": {
+      "uid": 1003,
+      "x25519PrivB64": "gavYBJst1YfYOOQUexKsDtl0F01xhWPBCjFleNBy4+0=",
+      "x25519PubB64": "MBw/CLwJxNNZJ2dpbjDAvbmQIEW8+QasPBs4xGqvAEY=",
+      "ed25519SecretB64": "zbIyM3ALM454y7929khDCMg5n301WrCN2uWMufdi+vtFWf+L5Ly3000iGzGYvZw99j78JSw9BwjWivxvrMyejg==",
+      "ed25519PubB64": "RVn/i+S8t9NNIhsxmL2cPfY+/CUsPQcI1or8b6zMno4="
+    }
+  },
+  "courierKey": {
+    "rngLabel": "courier/server-key",
+    "kid": 1,
+    "privB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+    "pubB64": "xBiWIpBmpRMM7d18huOEdazEKea44lf9riHRjAWIdTo="
+  },
+  "capsule": {
+    "rngLabel": "courier/eph",
+    "to": 1002,
+    "from": 1001,
+    "id": "m-courier",
+    "ts": 1790000000000,
+    "innerBlobSha256B64": "m9UGORq/byxkbZExj9KcGBI/jlDNMvt6IZVGmZP+XX0=",
+    "sealedSha256B64": "aoehWuFQC8+ZzXWu668DSEQvjgQ0gNOVS0nIzx6iDi8=",
+    "csigMessage": "mrenzo-courier-v1|m-courier|1790000000000|1001|1|m9UGORq/byxkbZExj9KcGBI/jlDNMvt6IZVGmZP+XX0=|aoehWuFQC8+ZzXWu668DSEQvjgQ0gNOVS0nIzx6iDi8=",
+    "c": "AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM"
+  },
+  "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+  "frameWithoutCapsule": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+  "queueJson": "{\"v\":2,\"id\":\"m-courier\",\"ts\":1790000000000,\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"from\":{\"uid\":1001,\"sig_pub\":\"cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=\"},\"to\":0,\"toIdx\":\"YH1ZEcRXI8I=\",\"payload\":\"AAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5g==\",\"sig\":\"e2cN79H+U/QU/RlVF15wQSrlggOqab1vVnwCo7VLZobMVENNGgSAPjSEEyWoPqATgpPPpPnhtU7NdWo5+MSEDw==\",\"L\":4,\"padded\":true,\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+  "routed": "{\"toUserId\":1002,\"messageId\":\"m-courier\",\"text\":\"{\\\"v\\\":3,\\\"dh\\\":\\\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\\\",\\\"mac\\\":\\\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\\\"}\",\"encrypted\":true,\"transport\":\"mesh-courier\"}",
+  "negatives": [
+    {
+      "name": "no capsule",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "another courier key id (kid is signed: the capsule says 1)",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 2,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": true,
+      "serverOpens": false
+    },
+    {
+      "name": "not the server's key (the box does not open)",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "gavYBJst1YfYOOQUexKsDtl0F01xhWPBCjFleNBy4+0=",
+      "relayKeeps": true,
+      "serverOpens": false
+    },
+    {
+      "name": "a truncated capsule",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66A==\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "another capsule version",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AgHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "kid changed after signing",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQLp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 2,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "a flipped byte of the ephemeral key",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHo52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "a flipped byte of the box (the sealed recipient)",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6iurTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "a flipped byte of csig",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KFHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "the capsule of another frame of the same sender",
+      "frame": "{\"v\":2,\"id\":\"m-other\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9kYvQ5IT5EdJOZts5GuKM6OxINmPaHMI2LKS3aMZqhN6xXzpeLrZKlCwb+CCwTkX7kqquI6V6pCtQRcZYwEqmnFHvYXBopxwBaXMeY+a5YeHsBEUe+yKkH1YDSUQAXDC3ZlJTZz0MXFeTV8Zh7HmPosZfT6WtmAM=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "a capsule attached by a bystander (re-addressed to itself; csig is not the sender's)",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdBZxLE2h2irDpDlKFPyTbYW/Fx4awkeBpfraw/rzg6aQG9BMI5tq4vPcWkqg7tSuXxDpq5IuTnWo3R3pB9K6W0J\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    },
+    {
+      "name": "a bystander's sealed recipient spliced under the sender's csig",
+      "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdAFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+      "kid": 1,
+      "courierPrivB64": "2dWvpmaZAtaP8n9fTPjcp8wCAJEuw9BLOWVmVjJxD+M=",
+      "relayKeeps": false,
+      "serverOpens": false
+    }
+  ],
+  "seenSet": {
+    "note": "One node, one seen set, in order (§W8.3). Each row is a copy heard on `lane` (a radio: a frame is relayed only on the radio it was heard on) with `canRelay` = that radio has somebody to pass the frame on to. `admit` is decided BEFORE any signature work from the peeked seen key, `hops` and capsule claim: new | duplicate (dropped, free) | upgrade (checked again). For an admitted frame: `first` = act on it (once per node, whatever the lane); `forward` = the exact frames to emit, each with its lane (empty = none); `capsuleUpgrade` = the first verified capsule for a frame seen without one. The set remembers, per frame, the hops THIS node relayed it with on each lane and — for the node as a whole — the verified capsule itself: an emission carries that capsule whether or not the copy in hand does, and a capsule upgrade is emitted on every lane the node relayed on, at the hops of that earlier emission, whatever the upgrading copy's hops or lane are. A row with `markOwn` records a frame the node transmits itself (its echo is a duplicate on every lane). A node emits one frame at most twice per lane, and only a copy that passed the whole check can cause any emission. `orderings`: each entry is a FRESH node — the two unsigned levers (hops, the capsule) used together in every order, and the two-radio cases; in each, the last emission on every lane carries the sender's capsule.",
+    "steps": [
+      {
+        "name": "a copy that arrives with its budget spent (hops 2 of L 4): delivered, not relayed",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "new",
+        "first": true,
+        "forward": [],
+        "capsuleUpgrade": false
+      },
+      {
+        "name": "the same copy again",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "a copy with an inflated hops",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":16,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "a copy with budget left (hops 1) and a bystander's capsule: relayed now — a relay upgrade — without that capsule",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdBZxLE2h2irDpDlKFPyTbYW/Fx4awkeBpfraw/rzg6aQG9BMI5tq4vPcWkqg7tSuXxDpq5IuTnWo3R3pB9K6W0J\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "upgrade",
+        "first": false,
+        "forward": [
+          {
+            "lane": 0,
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}"
+          }
+        ],
+        "capsuleUpgrade": false
+      },
+      {
+        "name": "hops 0, no capsule: relayed already",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "the bystander's capsule again: the claim buys a check and nothing else",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdBZxLE2h2irDpDlKFPyTbYW/Fx4awkeBpfraw/rzg6aQG9BMI5tq4vPcWkqg7tSuXxDpq5IuTnWo3R3pB9K6W0J\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "upgrade",
+        "first": false,
+        "forward": [],
+        "capsuleUpgrade": false
+      },
+      {
+        "name": "the sender's capsule (hops 0): a capsule upgrade — emitted once more with it, at the hops this node relayed with (2), not at this copy's",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "upgrade",
+        "first": false,
+        "forward": [
+          {
+            "lane": 0,
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+          }
+        ],
+        "capsuleUpgrade": true
+      },
+      {
+        "name": "the sender's capsule again",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "the bystander's capsule after the sender's",
+        "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdBZxLE2h2irDpDlKFPyTbYW/Fx4awkeBpfraw/rzg6aQG9BMI5tq4vPcWkqg7tSuXxDpq5IuTnWo3R3pB9K6W0J\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "a ptt segment: never relayed",
+        "frame": "{\"v\":2,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e.0\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgFAA3B0dAEBD4+tW9nLRp+hZXCGdyiVDgAAhPGtVXrhepD8/kPlL2IoQ6zMwdjmc5uHAV+Wt5yMKwDhXh9yrpJZGfg1w7lmOPt6ArZ6nGf7giJ6rdKI3eWXd3sIoRRZf2cRfhyuCYc2bFgve6kNcvMnHzc7uQrx7fhK0wmhwoSD2+vO8w9ZGQCM/BhAIPciNVQTLHUik6ejHzWApSJNtxUp6ReTqIdeCgB0ONsTaF+qtyTsCr2RbqtSMwIEkgaZ9lXDSYLn/K4+IAKVAdbp+q0R5klJ1Sn29mVKhCMST8+jeg5yQCk2Jtmxb49XtnfnVvm8n3uMzBWt9aepF5vbl6fsU6rZ2K2yO2rOQ9H2CHTBA7zRDXvH4S9uXXc+CqdV1naiYzr4GdRiQ3VJPuD46DWcqHjLVrigFhdDfSU4rSMV9E/DWF/gdzJn2D+92YmLPbUZRxK8fzz60gql2Uf/hA/4cIzpTuBPGewhjYXAhV6xW3Ys8uca1IKiTFT0RIneAlUL\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "new",
+        "first": true,
+        "forward": [],
+        "capsuleUpgrade": false
+      },
+      {
+        "name": "its copy",
+        "frame": "{\"v\":2,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e.0\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgFAA3B0dAEBD4+tW9nLRp+hZXCGdyiVDgAAhPGtVXrhepD8/kPlL2IoQ6zMwdjmc5uHAV+Wt5yMKwDhXh9yrpJZGfg1w7lmOPt6ArZ6nGf7giJ6rdKI3eWXd3sIoRRZf2cRfhyuCYc2bFgve6kNcvMnHzc7uQrx7fhK0wmhwoSD2+vO8w9ZGQCM/BhAIPciNVQTLHUik6ejHzWApSJNtxUp6ReTqIdeCgB0ONsTaF+qtyTsCr2RbqtSMwIEkgaZ9lXDSYLn/K4+IAKVAdbp+q0R5klJ1Sn29mVKhCMST8+jeg5yQCk2Jtmxb49XtnfnVvm8n3uMzBWt9aepF5vbl6fsU6rZ2K2yO2rOQ9H2CHTBA7zRDXvH4S9uXXc+CqdV1naiYzr4GdRiQ3VJPuD46DWcqHjLVrigFhdDfSU4rSMV9E/DWF/gdzJn2D+92YmLPbUZRxK8fzz60gql2Uf/hA/4cIzpTuBPGewhjYXAhV6xW3Ys8uca1IKiTFT0RIneAlUL\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "an unknown name without L: verified, never relayed",
+        "frame": "{\"v\":2,\"id\":\"u-seen\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABwVwb2xsOXhrSwxf8/KaX8hQjQbpizjbGoByWZNBhTQ4LMQ/Qg/iF3sZaC+fuJAAgwgRlTkv93xgz7q2GsjBCUWZNK4vLg8B\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "new",
+        "first": true,
+        "forward": [],
+        "capsuleUpgrade": false
+      },
+      {
+        "name": "its copy (no upgrade for a kind that is not relayed)",
+        "frame": "{\"v\":2,\"id\":\"u-seen\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABwVwb2xsOXhrSwxf8/KaX8hQjQbpizjbGoByWZNBhTQ4LMQ/Qg/iF3sZaC+fuJAAgwgRlTkv93xgz7q2GsjBCUWZNK4vLg8B\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "a frame this node transmits itself is marked before it goes on the air",
+        "frame": "{\"v\":2,\"id\":\"m-own\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3rTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+pgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9HjamYPbiGpn0bqOAol0Pmq/7olJkQUjcmV+SRXa/qRqyAc8XTo+QlbR3dGhOOtD53td8UOo3Rii8KYhbBUd0vCYVA8Ykqu18HLpeTNJ+RjQbUMsD14WRqmYEKeWU8RVnFUsNjO/a/zfutMXoG9Ez0hvzgwFQXw8=\"}",
+        "markOwn": true
+      },
+      {
+        "name": "the echo of that frame",
+        "frame": "{\"v\":2,\"id\":\"m-own\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3rTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+pgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9HjamYPbiGpn0bqOAol0Pmq/7olJkQUjcmV+SRXa/qRqyAc8XTo+QlbR3dGhOOtD53td8UOo3Rii8KYhbBUd0vCYVA8Ykqu18HLpeTNJ+RjQbUMsD14WRqmYEKeWU8RVnFUsNjO/a/zfutMXoG9Ez0hvzgwFQXw8=\"}",
+        "lane": 0,
+        "canRelay": true,
+        "admit": "duplicate"
+      },
+      {
+        "name": "the echo of that frame",
+        "frame": "{\"v\":2,\"id\":\"m-own\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3rTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+pgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9HjamYPbiGpn0bqOAol0Pmq/7olJkQUjcmV+SRXa/qRqyAc8XTo+QlbR3dGhOOtD53td8UOo3Rii8KYhbBUd0vCYVA8Ykqu18HLpeTNJ+RjQbUMsD14WRqmYEKeWU8RVnFUsNjO/a/zfutMXoG9Ez0hvzgwFQXw8=\"}",
+        "lane": 1,
+        "canRelay": true,
+        "admit": "duplicate"
+      }
+    ],
+    "orderings": [
+      {
+        "name": "the capsule arrives on a copy nobody relays (hops inflated to 16), then a relayable copy somebody stripped: the relay carries the capsule the node already verified",
+        "steps": [
+          {
+            "name": "the sender's capsule, hops 16: delivered, capsule kept, not relayed",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":16,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the stripped copy, hops 0: a relay upgrade — emitted WITH the capsule",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the sender's capsule, hops 0",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          },
+          {
+            "name": "the stripped copy again",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "relayed without the capsule (a stripped copy came first), then the capsule on a copy nobody relays: emitted once more with it, at the hops of the first emission",
+        "steps": [
+          {
+            "name": "the stripped copy, hops 0: relayed without a capsule",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the sender's capsule, hops 16: a capsule upgrade — emitted with hops 1, not 17",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":16,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": true
+          },
+          {
+            "name": "the sender's capsule, hops 0",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "no attacker: the capsule copy arrives with its L budget spent (hops 2), then a 1.0.0 re-flush of the same frame (hops 0, no capsule)",
+        "steps": [
+          {
+            "name": "the sender's capsule, hops 2",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the 1.0.0 re-flush, hops 0: relayed with the capsule",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the sender's capsule, hops 1",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "nothing relayable yet: the capsule is kept for the stores (capsuleUpgrade without an emission) and rides on the relay when a copy with budget comes",
+        "steps": [
+          {
+            "name": "no capsule, hops 2",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the sender's capsule, hops 16: kept, nothing emitted",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":16,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [],
+            "capsuleUpgrade": true
+          },
+          {
+            "name": "a bystander's capsule, hops 2: nothing left to claim",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQEmHNtTRO1zT2S+Yrs2Gpxt4Bb4d80PAHm7DpUqmFE7AoRcMoi4MgMhK6rAbAXG2SuURohYY6VeWdBZxLE2h2irDpDlKFPyTbYW/Fx4awkeBpfraw/rzg6aQG9BMI5tq4vPcWkqg7tSuXxDpq5IuTnWo3R3pB9K6W0J\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          },
+          {
+            "name": "no capsule, hops 1: a relay upgrade — emitted with the capsule",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "the sender's capsule, hops 0",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "two radios: heard on lane 0 first and relayed there — a copy on lane 1 is still relayed THERE (a frame is relayed only on the radio it was heard on), and acted on once",
+        "steps": [
+          {
+            "name": "lane 0, hops 0: delivered, relayed on lane 0",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 0 again",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          },
+          {
+            "name": "lane 1, hops 1: a relay upgrade on lane 1 — not delivered a second time",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 1,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 1 again",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "two radios, relayed on both without the capsule; the capsule then arrives on lane 1: emitted once more on BOTH lanes, each at its own hops",
+        "steps": [
+          {
+            "name": "lane 0, no capsule, hops 0",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "new",
+            "first": true,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 1, no capsule, hops 1",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 1,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 1, the sender's capsule, hops 16",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":16,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 0,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              },
+              {
+                "lane": 1,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": true
+          },
+          {
+            "name": "lane 0, the sender's capsule",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 0,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      },
+      {
+        "name": "a radio with nobody to pass the frame on to (canRelay false) relays nothing and is not marked: the copy that comes when somebody is there still goes",
+        "steps": [
+          {
+            "name": "lane 1, nobody else on it: delivered, not relayed, lane left open",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": false,
+            "admit": "new",
+            "first": true,
+            "forward": [],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 1 again, still nobody: a duplicate (a relay upgrade could come to nothing)",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": false,
+            "admit": "duplicate"
+          },
+          {
+            "name": "lane 1, somebody is there now: relayed",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "upgrade",
+            "first": false,
+            "forward": [
+              {
+                "lane": 1,
+                "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}"
+              }
+            ],
+            "capsuleUpgrade": false
+          },
+          {
+            "name": "lane 1 again",
+            "frame": "{\"v\":2,\"id\":\"m-courier\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9PglMsYGqdMXW0TOBzZWmEvsGBGWzk+lQ8j82ZggnA49Tl179UJfSrykno83eJSheloo6Fz+H5ntnDe/R/lP0FP0ZVRdecEEq5YIDqmm9b1Z8AqO1S2aGzFRDTRoEgD40hBMlqD6gE4KTz6T54bVOzXVqOfjEhA8=\",\"c\":\"AQHp52/9y5WZe/EHBRcqH9k5bmwbxYbq9Z2P9WfXRCr2X5lUQIX2o6murTE0j8n2ZCVKZmpLqLv4VCYFJ9dVw8SFSLgBHvjnBg8bTLctayLGQw+ig9Fgm9OPyqq4CNBZuqb66KBHH2wmF9bddZ5wBHz3L+zxCNJPUAYM\"}",
+            "lane": 1,
+            "canRelay": true,
+            "admit": "duplicate"
+          }
+        ]
+      }
+    ]
+  }
+}

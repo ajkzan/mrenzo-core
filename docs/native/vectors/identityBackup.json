@@ -1,0 +1,30 @@
+{
+  "area": "identityBackup",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/utils/crypto.ts:251-331",
+    "mobile/src/services/secureStorage.ts:346-351 (deriveStorageSubkey)",
+    "mobile/src/store/auth.ts:564-621"
+  ],
+  "notes": [
+    "LOCAL-ONLY (never crosses devices). Needed only if a native iOS build replaces the RN app in place and must adopt the RN identity backup slot.",
+    "mmkvKeyHex = the 32-char hex string stored in Keychain service \"com.mrenzo.mmkv.key\" (secureStorage.ts). subkey = SHA-512( UTF-8( context + mmkvKeyHex ) )[0:32] — the hex STRING is concatenated, not decoded.",
+    "blob = b64( nonce(24) || secretbox( UTF-8( x25519PrivateKey BASE64 STRING ), nonce, subkey ) ) — the plaintext is the base64 text of the key, not the raw 32 bytes."
+  ],
+  "mmkvKeyHex": "00112233445566778899aabbccddeeff",
+  "context": "mrenzo-identity-backup-v1",
+  "subkeyHex": "7b356ebf726d43a28ab7d375dd527c4346113144bc0d6e30f3a2a56bd0d3c9fe",
+  "privateKeyB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+  "rng": {
+    "label": "identityBackup/sealIdentityBackup",
+    "draws": [
+      {
+        "n": 24,
+        "hex": "d21fb51c6be0bf41136dd3fb4b1af689bea400ca292cd0a8"
+      }
+    ]
+  },
+  "blobB64": "0h+1HGvgv0ETbdP7Sxr2ib6kAMopLNCom4o3cIHFFsKw0iTQ0zQr0rMZLhTFuOWhjZw8RLaN9ct5hgbRP/x1juK5zQQvD+QdfY+WkZLa6qJzjEKh"
+}

@@ -1,0 +1,48 @@
+{
+  "area": "senderKeysV3",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "SKDM v2 = typed plaintext {\"t\":\"skdm\",\"id\",\"body\":{\"v\":2,\"groupId\",\"chainKey\",\"signingPub\",\"startCounter\",\"from\"}} on a v3 ratchet message; frame action sender-key-distribution, skdmTransport 3.",
+    "body.from MUST equal the server-stamped sender; skdmTransport ≠ 3 or v ≠ 2 is rejected (not counted).",
+    "Post = \"sk2:\" + {\"v\":2,\"ctr\",\"n\",\"ct\",\"sig\"}; sig = Ed25519(chain signing key, \"mrenzo-sk2|\" + groupId + \"|\" + senderUid + \"|\" ‖ BE64(ctr) ‖ ct), groupId/senderUid taken from where the post arrived, never from the envelope.",
+    "Chain KDFs unchanged: message key = HKDF(chainKey, \"mrenzo-sender-msg\"), next = HMAC(chainKey, 0x02)."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "skdm": {
+    "chainRngLabel": "v3/sk-chain",
+    "json": "{\"v\":2,\"groupId\":\"g-1\",\"chainKey\":\"Rdkj7eSFR4xfpGUEdqzn8Y4DEdvQCX4Z84XHVHT3q4c=\",\"signingPub\":\"Mj5w5HzD1v5RhK7WjIs1yUV3ndBPMCFd9gv8Ec8o/RI=\",\"startCounter\":0,\"from\":1001}",
+    "typedPlaintext": "{\"t\":\"skdm\",\"id\":\"skdm-1\",\"body\":{\"v\":2,\"groupId\":\"g-1\",\"chainKey\":\"Rdkj7eSFR4xfpGUEdqzn8Y4DEdvQCX4Z84XHVHT3q4c=\",\"signingPub\":\"Mj5w5HzD1v5RhK7WjIs1yUV3ndBPMCFd9gv8Ec8o/RI=\",\"startCounter\":0,\"from\":1001}}",
+    "frameJson": "{\"type\":\"p2p-message\",\"data\":{\"toUserId\":1002,\"messageId\":\"skdm-1\",\"action\":\"sender-key-distribution\",\"skdmTransport\":3,\"skdm\":\"{\\\"v\\\":3,\\\"dh\\\":\\\"QxOsvxzWGPgcI6aE8wLy7N++kMJiLwSgVBjTk2+LvRk=\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"02ND8WY9wlVYKZmnK8D6tYPMhE6rI2u/H/+AWy1cX0EHDc0HAPvUhb2BoNuNVGvX1pVHP43RiolNL95tM1/FKDXw/8cuAG20aT24MHWJ2kPNrT6zLKWtiKSQmgU+Lywq3sBWy1mwxLUCZj4QC+zQrAxgVFAAyRZsY6RbQtWMIxBtVShbBODFA4UtZkj/KejbYrqEVzhK82PaNEA+jL3aOK/jUXj/rXBxL/Iuj8EA/9Z1W5BBOpk+7KjVzSozY4pHAF2RvZiJrhuTVJmoUIZ+T9m4sNe3ApwMnMtXlHti/B18r5EqXoDVs050SsE+dP2nDpFs5w==\\\",\\\"mac\\\":\\\"77WnuY48pYw/7LHwwVlCIlihLIkKLb08FEhBrCd87WA=\\\",\\\"x\\\":{\\\"ik\\\":\\\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\\\",\\\"ed\\\":\\\"cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=\\\",\\\"ek\\\":\\\"QxOsvxzWGPgcI6aE8wLy7N++kMJiLwSgVBjTk2+LvRk=\\\",\\\"spk\\\":9}}\"}}"
+  },
+  "post": {
+    "rngLabel": "v3/sk-post",
+    "groupId": "g-1",
+    "senderUid": 1001,
+    "plaintext": "{\"t\":\"chat\",\"id\":\"p-1\",\"body\":\"hi group\"}",
+    "wire": "sk2:{\"v\":2,\"ctr\":0,\"n\":\"0jXz1F+xucz3h+k54n+Qv+kyRwT9RFsz\",\"ct\":\"F9sIOgvp9N43Nn3VkSWtCC1ZnKfTxT6bYqVl5b9h1qG/z2pjkQVzCs1RrVCWWWqXFtMNZwwQwo7P\",\"sig\":\"tkiiEnvnRY6THzu+PKY5DDntcZjAX6nO84UCmTWcl1pQWH/83dF1AT1P9ZfDDZ0mqojPgWTuRN2FfbgARgR5Dw==\"}"
+  },
+  "rejected": [
+    "other senderUid",
+    "other groupId",
+    "sk1 prefix",
+    "SKDM from ≠ sender",
+    "SKDM v1"
+  ]
+}

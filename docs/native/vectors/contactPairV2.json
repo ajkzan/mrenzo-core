@@ -1,0 +1,38 @@
+{
+  "area": "contactPairV2",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Link (deep link, paste, https): mrenzo://pair/ + base64url(no padding) of {\"v\":2,\"uid\",\"username\"?} — no keys; opening it is an online directory lookup.",
+    "Scan (in-app QR only): {\"v\":2,\"uid\",\"username\"?,\"displayName\"?,\"ipk\",\"spk\",\"seed\",\"ts\",\"sig\"}, sig = Ed25519(spk, \"mrenzo-pair-v2|\" + uid|ipk|spk|seed|ts) over the base64 strings.",
+    "Rejected: v1, unknown keys, keys without sig, a bad sig, non-canonical base64."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    }
+  },
+  "link": {
+    "uid": 1001,
+    "username": "alice",
+    "url": "mrenzo://pair/eyJ2IjoyLCJ1aWQiOjEwMDEsInVzZXJuYW1lIjoiYWxpY2UifQ"
+  },
+  "scan": {
+    "seedB64": "WlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlo=",
+    "ts": 1790000000000,
+    "signedText": "mrenzo-pair-v2|1001|HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=|cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=|WlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlo=|1790000000000",
+    "sigB64": "pQdlo7V20Z/ZtyfHQq7ZjAvT795sHVXCUzhiOqmXWYhIJpo+iI+vjhhhb0yuDTRF/CBUMmASjhNgapLBNIXWAg==",
+    "url": "mrenzo://pair/eyJ2IjoyLCJ1aWQiOjEwMDEsInVzZXJuYW1lIjoiYWxpY2UiLCJkaXNwbGF5TmFtZSI6IkFsaWNlIiwiaXBrIjoiSEc0NTZ2UThpWGJqVzUwbDk0Qyt4YnlpSUZiNSs4WDNpbTV3VE0zemVFYz0iLCJzcGsiOiJjdXZkUjBzcDdESGJCWWRwUGNvbzhKZDNOMHdRUWRpZ0dzQU1QQnhnc004PSIsInNlZWQiOiJXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xvPSIsInRzIjoxNzkwMDAwMDAwMDAwLCJzaWciOiJwUWRsbzdWMjBaL1p0eWZIUXE3WmpBdlQ3OTVzSFZYQ1V6aGlPcW1YV1loSUpwbytpSSt2amhoaGIweXVEVFJGL0NCVU1tQVNqaE5nYXBMQk5JWFdBZz09In0"
+  },
+  "rejected": {
+    "forgedUid": "mrenzo://pair/eyJ2IjoyLCJ1aWQiOjEwMDMsInVzZXJuYW1lIjoiYWxpY2UiLCJkaXNwbGF5TmFtZSI6IkFsaWNlIiwiaXBrIjoiSEc0NTZ2UThpWGJqVzUwbDk0Qyt4YnlpSUZiNSs4WDNpbTV3VE0zemVFYz0iLCJzcGsiOiJjdXZkUjBzcDdESGJCWWRwUGNvbzhKZDNOMHdRUWRpZ0dzQU1QQnhnc004PSIsInNlZWQiOiJXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xvPSIsInRzIjoxNzkwMDAwMDAwMDAwLCJzaWciOiJwUWRsbzdWMjBaL1p0eWZIUXE3WmpBdlQ3OTVzSFZYQ1V6aGlPcW1YV1loSUpwbytpSSt2amhoaGIweXVEVFJGL0NCVU1tQVNqaE5nYXBMQk5JWFdBZz09In0",
+    "v1": "mrenzo://pair/eyJ2IjoxLCJ1aWQiOjEwMDEsImlwayI6IkhHNDU2dlE4aVhialc1MGw5NEMreGJ5aUlGYjUrOFgzaW01d1RNM3plRWM9Iiwic3BrIjoiY3V2ZFIwc3A3REhiQllkcFBjb284SmQzTjB3UVFkaWdHc0FNUEJ4Z3NNOD0iLCJzZWVkIjoiV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdsbz0iLCJ0cyI6MTc5MDAwMDAwMDAwMH0",
+    "unsignedKeys": "mrenzo://pair/eyJ2IjoyLCJ1aWQiOjEwMDEsImlwayI6IkhHNDU2dlE4aVhialc1MGw5NEMreGJ5aUlGYjUrOFgzaW01d1RNM3plRWM9Iiwic3BrIjoiY3V2ZFIwc3A3REhiQllkcFBjb284SmQzTjB3UVFkaWdHc0FNUEJ4Z3NNOD0iLCJzZWVkIjoiV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdscGFXbHBhV2xwYVdsbz0iLCJ0cyI6MTc5MDAwMDAwMDAwMH0",
+    "linkWithKey": "mrenzo://pair/eyJ2IjoyLCJ1aWQiOjEwMDEsImlwayI6IkhHNDU2dlE4aVhialc1MGw5NEMreGJ5aUlGYjUrOFgzaW01d1RNM3plRWM9In0"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "area": "ratchetV3Negative",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Each wire is derived from the ratchetV3-style exchange recorded in this file (keys = x3dhV2.json). expect: legacy = placeholder «отправлено старой версией», not counted; notEnvelope = dropped, not counted; failed = MAC failure under every candidate session (counted).",
+    "Also asserted in tests/golden_ratchet_v3.rs: wrong AD, replayed position, missing responder session (NeedsResponder → host seen-set), wrong SPK private, relabelled sender (IdentityMismatch), typed-plaintext and outer/inner agreement rules."
+  ],
+  "bobStateBefore": {
+    "v": 3,
+    "role": "resp",
+    "sid": "nTEL80ErNo4Nrrbpi2mGKkwjmnT4yppTXyOsShL3IdQ=",
+    "ad": "bXJlbnpvLWFkLXYzHG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEdy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwz0KomH3YtKNRXdp0Dgdz0b2Hs6ZTdTTBK+chgGHuyWFcetOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+    "rootKey": "kg9o0hOYiV9QuI22N2hcpyFBBxWznjcuualPWdlowqE=",
+    "myDHPub": "h3ruAhZ7oJxUvl9BtxFIx02/L0Qbv2F1BWmVL+fVjAA=",
+    "myDHPriv": "KNgVRkuHEK+8AOSGTbxGHDtCBxpbnQei//medvGin8k=",
+    "prevMyDHPub": "lVCB4WRNUzzQxpxHOfD+HTCehed9jjUA/NP5VRF0SAQ=",
+    "peerDH": "l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=",
+    "peerEk": "l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=",
+    "sendChainKey": "jgDNZUWP3E/unylhdlvvwb2ZcXVPfgeElvbbKCQOHhU=",
+    "sendCount": 1,
+    "recvChainKey": "Ycp9udBBzjv47sLxbXKUiBiiu09AeUv0oSNuyzy5Ofo=",
+    "recvCount": 1,
+    "prevSendCount": 0,
+    "skipped": [],
+    "x": null,
+    "peerIk": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+    "peerEd": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+    "createdAt": 1790000000000,
+    "confirmedAt": null
+  },
+  "cases": [
+    {
+      "name": "v2",
+      "wire": "{\"v\":2,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hM=\"}",
+      "expect": "legacy"
+    },
+    {
+      "name": "missingMac",
+      "wire": "{\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\"}",
+      "expect": "notEnvelope"
+    },
+    {
+      "name": "duplicateKey",
+      "wire": "{\"v\":3,\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hM=\"}",
+      "expect": "notEnvelope"
+    },
+    {
+      "name": "nonCanonicalBase64",
+      "wire": "{\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hN=\"}",
+      "expect": "notEnvelope"
+    },
+    {
+      "name": "xStripped",
+      "wire": "{\"v\":3,\"dh\":\"l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=\",\"pn\":0,\"n\":1,\"ct\":\"YXP+lxojka9qh0vIA4y8hlBeXPZNKPD7mLUwRQ7jr9CfonwEE3AFbacz8I7fTHTU5VElO3MkGJXfNFuUmP53R1pIiyCO4OlRlTBM\",\"mac\":\"URhTlLP9PwUvUMvvFbtYUG/91jbSRJBbtjktcAHkJCU=\"}",
+      "expect": "failed"
+    },
+    {
+      "name": "xAdded",
+      "wire": "{\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hM=\",\"x\":{\"ik\":\"HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=\",\"ed\":\"cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=\",\"ek\":\"l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=\",\"spk\":17,\"opk\":118}}",
+      "expect": "failed"
+    },
+    {
+      "name": "headerFlipped",
+      "wire": "{\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":3,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc4=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hM=\"}",
+      "expect": "failed"
+    },
+    {
+      "name": "ciphertextFlipped",
+      "wire": "{\"v\":3,\"dh\":\"z3YHSlUR+XRL73wCl6y2A1k140kZ4MLCsxgJdc36YTY=\",\"pn\":2,\"n\":0,\"ct\":\"wNtisamrgf0cpJ5vFW6Vabkm4USXI3XSvPb1reS95zn3jWXhelCw66u5uw0hjPjQ2g1CxgVzGLOmEhysxhzO7laKJGYvIz4aDkiVHc8=\",\"mac\":\"fNgr5D5XdYKuN4zGjBW9AfWwT+M3XEd1cJ0b4q+J9hM=\"}",
+      "expect": "failed"
+    }
+  ]
+}

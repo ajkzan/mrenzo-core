@@ -1,0 +1,90 @@
+{
+  "area": "pushHintV1",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "For a push token registered with \"nse\":1 the server adds \"mutable-content\":1 and one payload key: mz = \"OSB1:\" + b64(eph_pub[32] ‖ nonce[24] ‖ crypto_box(hint, nonce, IK_recipient, eph_priv)) — the offline seal of offlineSeal.json. Draws: the ephemeral secret (32), then the nonce (24).",
+    "hint = {\"from\":<uid>[,\"mid\":<messageId>]} for a 1:1 message, {\"ch\":<channelId>[,\"mid\"]} for a room or channel post. Exactly one of from / ch; unknown keys ignored; a duplicate key, another shape or more than 512 bytes → no hint. A sealed-sender frame carries no mz.",
+    "The Notification Service Extension opens mz with the identity private key and rewrites the notification. It MUST NOT read or write session rows or the aux and MUST NOT step a ratchet."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "direct": {
+    "rngLabel": "mz/direct",
+    "hintJson": "{\"from\":1001,\"mid\":\"m-1\"}",
+    "mz": "OSB1:VGTu7FOVztdIkWiGYos6KS8LEde4sP3gWDHxnIJMqi++m9Rv1TkIQBpScG9XWdpRoZUsTmA98e+tAoJf287qC+/tgzzHgkyG4F6wHKrVQXWfX8v/pdZld/eGUG86JB83xQ=="
+  },
+  "channel": {
+    "rngLabel": "mz/channel",
+    "hintJson": "{\"ch\":\"abc-def-ghi-jkl\"}",
+    "mz": "OSB1:tim1SbyFVqGFcLo0fsFWLFc9yYw6xU2QYasd1x72/igiH7lL8hs6JUOG8oGNBF0LNnaLQjltS5j9+ihdFYwSTONIZeXO6NxHSYjJBAJv3SX07UrUJx0yfRfDfB0axySS"
+  },
+  "negatives": [
+    {
+      "name": "sealed to another device",
+      "mz": "OSB1:VGTu7FOVztdIkWiGYos6KS8LEde4sP3gWDHxnIJMqi++m9Rv1TkIQBpScG9XWdpRoZUsTmA98e+tAoJf287qC+/tgzzHgkyG4F6wHKrVQXWfX8v/pdZld/eGUG86JB83xQ==",
+      "x25519PrivB64": "5FnRqCjytSK0EwCfJhptLkkFpPkkofK41gq2X93m8Ss="
+    },
+    {
+      "name": "not sealed at all",
+      "mz": "{\"from\":1001}",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "both from and ch",
+      "mz": "OSB1:t85Z7N42JYcOtii3bVGvu5rdwHJLrWY9TQI/Axgv9WydPapBFC6z/cqcL9sQjS4fgswEuNQH2mafi+kpF6pzj5y+fUhdP4kdN3t6sQ7S3eykjYSL1LBU6RDyiNLACw==",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "neither",
+      "mz": "OSB1:Zq7/gX9E23rp6XwlQwwthRtWX3HHk9GZ2v8EosFeSjNXAFyN3q6vkZfuCtLtLnTQPYuwuRoQZlSN3WvYy2PZ/a77LeZrdmkwapzzNwXbp8F4lxQ=",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "from is not an integer",
+      "mz": "OSB1:6J7Jpi9Baa+NjZ+yG4NV31g22yFAGjsogtKyQtaGkExyUaahj1l8m/XNinZDZiGNrRwmLm6oGH8vePbvucHSiKl+B4xFAGQycYPhsK8xzqvMaNsywHsE",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "from of 0",
+      "mz": "OSB1:d5Hf0SaPKkA0HCvvq7cJJON/SRPtYX4QaYsnFovf8nTOImE40yDm2WONYia16clfPh4zFWhIRFKUmlZPxZVXfIx3LBVGV+sjr3XaqKiecDCS8Q==",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "a duplicate key",
+      "mz": "OSB1:IsxtzhcNtnk/peDo3oMM03I6maak+eG4T31/YLOngA+lkHAnZm2VPLW8TOkqR42LlSfyvJtUE9h81dKWUDpfGIZzsWiOV1HHRNcLuKB45A07uAnVs0j8O7gbSQ7ZuZKyew==",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "an empty channel id",
+      "mz": "OSB1:S0bOtRuf8TJmqpFRxqZp2WPhStrj7j1GTI/WgERhTTAyMWIBK74Fw0vrnsq+Zp7GLye2ByPJywNZEZM8PlVUCArZjb6PkYvIKCDDeb2WXNOt",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "a hint over 512 bytes",
+      "mz": "OSB1:Emw+nQtoeoH2dCH/pBGFYORBmJxhAn/EMXheHluPgENAlrVWeS1IqPOFCJXL2rBxC+gltHfsPFEIS6Rar7m8l+0Zszrg6kcv3qqoIgG0RxnctjYqfpfCqFualNvx8eSgE6zYOvQzBzaJM3h1129um9hq1RwYuifPs/y+FW+i8TUX5mM6M9B0lZDDS7f8hvJztcMmMnMis4RHxp62SnlsyuKF2dgJQKZUXpv8E4Zxtj8HyGjUjpTtMGSeUI9LcgWjlWMYAbQbmlwzacTFkgn5lIAiCMcoTXf7tLHI0fxGH4KFdZ4r6E6CTyk5kKCsYTzeWdAwE+YXZNlzgGHJ+yjHmZc2NLMCkC+QH2aElED5SWhIzkqaedfx6aXp1DM1RP2ZTg/dVDZIvaB6jZ7n+f4h3vasWFHB5wLKZQ+GGvPo0Aq1uLTJSdNIJMMBmU/Y6Ie3xkocEVG1fhpiDRNmrrcxGTM52/P+WxQHq8dK9DkbCXPhK/HwwLTUZhpPzGIyYBWHqXZ/TJaXk2GCrW+HEyChjMEm+OIGOwQLwW9U6b/i8hsx8+vBvGXjJuPTjflnCpcQ8pv6bAOAw6ssRMm6CkjmtO/8gKNXxBvqQGAxQwhI2P63rxwS04PZGOb2K0dRcANN5BGfM+QAUpzqVWt4+Kxt4gwPypQQNrNZ7655YWDQE23EWmFk1iQW7sGMx9+DOFImsj2EiGlriJ5VPmvOdh6d9fLRBEBvu9KaApKOVhh/QzwRZzxoaHr9ehEgEb07Pze3S7QtG5Mq2B6XwEHgulYpB25cjCulA4kXQT7MVXOvjL2DdUs5lYRHQMS0E8YhtA2Cz909M3ilhBDEsu2ClbGFAQggbD7nTmcaFXaxjVKtALWLMlQ2rj6Uk5laqfCGa0g6lkvEALSN/Opz6MQ4onvj+Ir9Lg8=",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    },
+    {
+      "name": "a truncated blob",
+      "mz": "OSB1:VGTu7FOVztdIkWiGYos6KS8LEde4sP3gWDHxnIJMqi++m9Rv1TkIQBpScG9XWdpRoZUsTmA98e+tAoJf287qC+/tgzzHgkyG4F6wHKrVQXWfX8v/pdZld/eGUG86",
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s="
+    }
+  ]
+}

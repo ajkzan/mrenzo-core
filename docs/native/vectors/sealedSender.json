@@ -1,0 +1,107 @@
+{
+  "area": "sealedSender",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/services/sealedEnvelope.ts",
+    "mobile/src/services/sealedSender.ts",
+    "internal/sealedsender/sealedsender.go (IssueCert/Verify/signedPayload)",
+    "mobile/src/screens/ChatScreen.tsx:896-940 (send), mobile/src/App.tsx:1040-1100 (receive)"
+  ],
+  "notes": [
+    "Cert canonical signed payload = be64(uid) || be64(expires_at_ms) || ASCII bytes of the sender_pub BASE64 STRING (not the decoded key). Signed by the server Ed25519 key (GET /api/sealed-sender/server-key → {publicKey}). The server key here is a TEST stand-in; production certs come from POST /api/sealed-sender/cert {senderPub}. Go Cert JSON tags: uid, expires_at_ms, sender_pub, sig. Validity = 24h (sealedsender.go:54).",
+    "verifyCert rejects when Date.now() > expires_at_ms (equal is still valid).",
+    "blob = b64( nonce(24) || ephemeralPub(32) || nacl.box(UTF-8 JSON.stringify({cert, ratchet}), nonce, recipientIdentityPub, ephemeralPriv) ). NOTE the ORDER: nonce FIRST, then ephemeral pub — the OPPOSITE of the server OSB1 format (offlineSeal.json).",
+    "sealEnvelope draws the ephemeral keypair (32) BEFORE the nonce (24).",
+    "`ratchet` is the ratchet envelope JSON STRING (despite the parameter name ratchetCiphertextB64). WS frame: {\"type\":\"p2p-sealed\",\"data\":{\"toUserId\",\"messageId\",\"blob\",\"deliveryToken\"}}; deliveryToken is an opaque server HMAC token (GET /api/sealed-sender/delivery-token/<recipientId>) and mandatory since build 179.",
+    "Receiver MUST verifyCert (with one forced server-key refresh on failure, sealedSender.ts:252) and then ratchet-decrypt inner.ratchet with the ratchet state keyed by cert.uid."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "x25519PubB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "ed25519PrivB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "ed25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    },
+    "bob": {
+      "uid": 2002,
+      "x25519PrivB64": "/jHUBE5Mh4TUdmo67V9Um6Z0UI96nvyeCY57YWxrfas=",
+      "x25519PubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "ed25519PrivB64": "UAYNhyuCdVJ/fk3U2ZI2vQzaSWwicGSOHKkZ/QMHlpIgsfMfb+HJX+vO6vlHCZ406/BzA5uXKxAwMiwANYPwZQ==",
+      "ed25519PubB64": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU="
+    }
+  },
+  "serverSigningKey": {
+    "rng": {
+      "label": "sealedSender/server.ed25519 (test stand-in for the Go signer)",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "b6d6b77aad4c1da4309365bb027b240a04b7d722bd474048e9e387331f599531"
+        }
+      ]
+    },
+    "privB64": "tta3eq1MHaQwk2W7AnskCgS31yK9R0BI6eOHMx9ZlTH4ZUUj92EJrZMu3kcrEhfsRZ4SHpTL50OaKydmnkEhfA==",
+    "pubB64": "+GVFI/dhCa2TLt5HKxIX7EWeEh6Uy+dDmisnZp5BIXw="
+  },
+  "cert": {
+    "uid": 1001,
+    "expires_at_ms": 1758886400000,
+    "sender_pub": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+    "sig": "cQ+XmCMEFm65dbo/fKZ3n8G0oq+eMoE0EGuDi+Oy4DHwJ3574ke0uPwGj8FTJmqI7w5RA/jN9PYCOwKU7mbzDQ=="
+  },
+  "certCanonicalPayloadHex": "00000000000003e90000019985cc90006f78317753573442414f36455447625350427141612f62354b5757534652377a5463543565384a4b32456b3d",
+  "verifyCert": {
+    "atT0": true,
+    "atExpiry": true,
+    "afterExpiry": false,
+    "wrongUid": false,
+    "wrongSenderPub": false
+  },
+  "inner": {
+    "ratchetInitRng": {
+      "label": "sealedSender/alice.ratchet.init",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "88660d8a87ea70a430c68a5c98e0cd28dd7edc5403e4d95c61858c0ba45ae8b3"
+        }
+      ]
+    },
+    "ratchetEncRng": {
+      "label": "sealedSender/alice.ratchet.enc",
+      "draws": [
+        {
+          "n": 24,
+          "hex": "4b6aaa525a56fc6dacffe8ae9a2de0d73c9097e2f6215451"
+        }
+      ]
+    },
+    "ratchetWire": "{\"v\":2,\"dh\":\"/DLCGSiSWpE/aC/RIeLTSSwJBwZYxa2Ej0M6M+u/5nU=\",\"pn\":0,\"n\":0,\"ct\":\"S2qqUlpW/G2s/+iumi3g1zyQl+L2IVRRKFguU+/CCZSR2E6/MGdDT4P8wbbroa1NjK+QCQ==\"}",
+    "innerJson": "{\"cert\":{\"uid\":1001,\"expires_at_ms\":1758886400000,\"sender_pub\":\"ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=\",\"sig\":\"cQ+XmCMEFm65dbo/fKZ3n8G0oq+eMoE0EGuDi+Oy4DHwJ3574ke0uPwGj8FTJmqI7w5RA/jN9PYCOwKU7mbzDQ==\"},\"ratchet\":\"{\\\"v\\\":2,\\\"dh\\\":\\\"/DLCGSiSWpE/aC/RIeLTSSwJBwZYxa2Ej0M6M+u/5nU=\\\",\\\"pn\\\":0,\\\"n\\\":0,\\\"ct\\\":\\\"S2qqUlpW/G2s/+iumi3g1zyQl+L2IVRRKFguU+/CCZSR2E6/MGdDT4P8wbbroa1NjK+QCQ==\\\"}\"}"
+  },
+  "seal": {
+    "rng": {
+      "label": "sealedSender/alice.sealEnvelope",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "9bbea7a2bbaeac88bb422d6536fd3a9bff890699333dc1119397a633f4b3060a"
+        },
+        {
+          "n": 24,
+          "hex": "501b7899ff993f15fb2724d0254b4811640de54697359ce8"
+        }
+      ]
+    },
+    "blobB64": "UBt4mf+ZPxX7JyTQJUtIEWQN5UaXNZzo1ySzxNs6KV3T78v6pXROU8i1oqNSF2pLju9BXMq9KHnXMPbgW+3YW5dwANSR8wT27iESFRUKeThZxbBwVaymxLO5MsfnAwzFhAnkIC8UeLzd9OTvouo8cc+Duzl93ThqVy/MffVcHLmCeJ6+nicNYp0NsJphInZ7/FmsrhGZU2w18nJlr8Nv91Eo4MyVVB7n87Tt9VJnKsIqM7RemwTuOkyNidEn89Te7fG1uxbQOs7FeIjH6Gdm1K43s+LRPkbr0FKUa3P3KJxpuaGTv5j5hZSDfY3w9udopL1xOCAabDNJnHF55tzTENxF5IkXW1OJ3uKdhNGjcLaD1pex6LxUEvn0Dzy8oOoeC7ayao2dgW4a9xx0WjgSV2NpwCqtF6QO7lQwI+UcleAWyZREP/3m5QQ03Na7lrCp5Plj47W9P6CaVl8WQC+H9CYZk9dK41Bw4O/BPBnBtdf3h0ayqlmOGd1563NUcKpM3cXDNn4TTeoQxoIRgTbf9669KgywfoVWIp5kHfs2D1AtEpLZFY+mYHxBBuLua5+TnRgWCRZv3fO/jGXfDcE9NnMHQKZJxl0aFkIA",
+    "layout": {
+      "nonceHex": "501b7899ff993f15fb2724d0254b4811640de54697359ce8",
+      "ephemeralPubHex": "d724b3c4db3a295dd3efcbfaa5744e53c8b5a2a352176a4b8eef415ccabd2879",
+      "boxHex": "d730f6e05bedd85b977000d491f304f6ee211215150a793859c5b07055aca6c4b3b932c7e7030cc58409e4202f1478bcddf4e4efa2ea3c71cf83bb397ddd386a572fcc7df55c1cb982789ebe9e270d629d0db09a6122767bfc59acae1199536c35f27265afc36ff75128e0cc95541ee7f3b4edf552672ac22a33b45e9b04ee3a4c8d89d127f3d4deedf1b5bb16d03acec57888c7e86766d4ae37b3e2d13e46ebd052946b73f7289c69b9a193bf98f98594837d8df0f6e768a4bd7138201a6c33499c7179e6dcd310dc45e489175b5389dee29d84d1a370b683d697b1e8bc5412f9f40f3cbca0ea1e0bb6b26a8d9d816e1af71c745a3812576369c02aad17a40eee543023e51c95e016c994443ffde6e50434dcd6bb96b0a9e4f963e3b5bd3fa09a565f16402f87f4261993d74ae35070e0efc13c19c1b5d7f78746b2aa598e19dd79eb735470aa4cddc5c3367e134dea10c682118136dff7aebd2a0cb07e8556229e641dfb360f502d1292d9158fa6607c4106e2ee6b9f939d181609166fddf3bf8c65df0dc13d36730740a649c65d1a164200"
+    }
+  },
+  "openWithWrongKey": null
+}

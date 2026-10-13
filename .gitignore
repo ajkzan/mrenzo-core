@@ -1,0 +1,4 @@
+target/
+.DS_Store
+# no hidden folders at the top level: editor and tool settings stay out of the repository
+/.*/

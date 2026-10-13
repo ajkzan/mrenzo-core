@@ -1,0 +1,777 @@
+{
+  "area": "meshV11",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Outer frame and inner blob as in meshV2.json: {\"v\":2,\"id\",\"ttl\",\"hops\"[,\"L\"],\"mode\",\"ts\",\"b\"[,\"c\"]}; b = base64(flags ‖ sig_pub[32] ‖ from u64 ‖ [toIdx 8] ‖ len u16 ‖ payload ‖ sig[64]). binding = \"mrenzo-mesh-v2|\" + id|ts|from.uid|0|(toIdx or -)|ttl|(L or -)|mode|kind|payload; payload in the binding = the ACK text, else base64 of every payload byte.",
+    "Strict check, in this order (`reason`): size (> 131 072 B) · utf8 · json (not an object, a duplicate key at any depth) · v · id (1..128 B, no '|') · number (ttl, hops, ts, L exact integers in [0, 2^53)) · hops (> 16) · mode · b64 (canonical) · blob (short, bytes after sig) · flags (exactly 0x03 msg, 0x08 ack, 0x80 / 0x82 named) · from · name · profile · signature (strict Ed25519 under sig_pub) · window (older than 25 h, more than 5 min ahead).",
+    "Profiles: msg flags 0x03, realtime ttl ≤ 7 or pigeon 1..86400, L in 1..4. ack flags 0x08, realtime, ttl ≤ 4, no L; from.uid 0 = the blind form (payload = b64(SHA-256(id)[0..16]), a one-time key). named: payload = BE8(nlen) ‖ name ‖ body, name ^[a-z0-9]{1,8}$, never msg / ack; ptt flags 0x82, ttl 0, no L, body ≤ 16 384; ctl flags 0x82, ttl ≤ 1, no L, body ≤ 8192; any other name realtime, ttl ≤ 7, L absent or 1..4.",
+    "seenKey = b64(SHA-256(inner blob)[0..16]) — inserted only for a frame that passed the check. Forward rule: forward iff hops < ttl AND (L absent OR floor(L / 2^(hops+1)) ≥ 1); the forwarded frame is REBUILT with only hops incremented (unknown outer keys dropped, c kept when well formed); a frame of an unknown name is relayed only with L present and ≤ 2048 payload bytes.",
+    "Blind ACK key: seed = HKDF-SHA256(0^32, sid, \"mrenzo-mesh-ack-v3|\" + id); the Ed25519 key pair of that seed signs the frame. Only the author (who knows sid) can recognise it: `forgedBlindAck` passes the frame check, so on any other node an ACK never prunes anything.",
+    "ptt body = 0x01 ‖ sflags ‖ tx[16] ‖ BE16(seq) ‖ [BE16(wlen) ‖ w] ‖ chunk; sflags bit0 LAST (a copy of the chunk's flag), bit1 HAS_KEY; outer id = <pttId>.<seq>. Keys alice / bob / carol as in x3dhV2.json; now = 1790000000000."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "nowMs": 1790000000000,
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    },
+    "carol": {
+      "uid": 1003,
+      "x25519PrivB64": "gavYBJst1YfYOOQUexKsDtl0F01xhWPBCjFleNBy4+0=",
+      "x25519PubB64": "MBw/CLwJxNNZJ2dpbjDAvbmQIEW8+QasPBs4xGqvAEY=",
+      "ed25519SecretB64": "zbIyM3ALM454y7929khDCMg5n301WrCN2uWMufdi+vtFWf+L5Ly3000iGzGYvZw99j78JSw9BwjWivxvrMyejg==",
+      "ed25519PubB64": "RVn/i+S8t9NNIhsxmL2cPfY+/CUsPQcI1or8b6zMno4="
+    }
+  },
+  "valid": [
+    {
+      "name": "msg, realtime — built by the 1.0.0 builder",
+      "frame": "{\"v\":2,\"id\":\"m-rt\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9wOB+fEQiee3p/GaLeS75LSDnWIJIM/doO1PKiog+Vx9ZJBfqLRvpLabCCRlbi+g7v1FFV9IYuf7uQ343OnlDqcFh83e5n9bVydP/3pVi3JsYMsEuD5YMMYj134anfjq4UGteqSbQMa9u79LHl1WEi+UtEHkOlwY=\"}",
+      "kind": "msg",
+      "bindingKind": "msg",
+      "fromUid": 1001,
+      "ttl": 7,
+      "hops": 0,
+      "L": 4,
+      "mode": "realtime",
+      "seenKey": "HgtdVziBxVNXbnjmxMX98w==",
+      "payloadLen": 256,
+      "forwarded": "{\"v\":2,\"id\":\"m-rt\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9wOB+fEQiee3p/GaLeS75LSDnWIJIM/doO1PKiog+Vx9ZJBfqLRvpLabCCRlbi+g7v1FFV9IYuf7uQ343OnlDqcFh83e5n9bVydP/3pVi3JsYMsEuD5YMMYj134anfjq4UGteqSbQMa9u79LHl1WEi+UtEHkOlwY=\"}"
+    },
+    {
+      "name": "msg, pigeon — built by the 1.0.0 builder",
+      "frame": "{\"v\":2,\"id\":\"m-pg\",\"ttl\":86400,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9ccbBNFLXpEvwmHdyNvJieybJEbbmOSrzm4kmWxBi+U26Yd7TBKy6dDT0HNrSZPSAlL/Nn/l4famoDZPJlumYoC72BJTEljEE8P9sVxLOlCuWpEhd9o+ltIBwOvtw09z1XV03svmc4S6j+B8liVmKZcSmdvYPgw8=\"}",
+      "kind": "msg",
+      "bindingKind": "msg",
+      "fromUid": 1001,
+      "ttl": 86400,
+      "hops": 0,
+      "L": 4,
+      "mode": "pigeon",
+      "seenKey": "Nd7YkJlFYLrMqljrHx5M0A==",
+      "payloadLen": 256,
+      "forwarded": "{\"v\":2,\"id\":\"m-pg\",\"ttl\":86400,\"hops\":1,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9ccbBNFLXpEvwmHdyNvJieybJEbbmOSrzm4kmWxBi+U26Yd7TBKy6dDT0HNrSZPSAlL/Nn/l4famoDZPJlumYoC72BJTEljEE8P9sVxLOlCuWpEhd9o+ltIBwOvtw09z1XV03svmc4S6j+B8liVmKZcSmdvYPgw8=\"}"
+    },
+    {
+      "name": "ack, the 1.0.0 form (id.tag, the recipient's uid and key)",
+      "frame": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}",
+      "kind": "ack",
+      "bindingKind": "ack",
+      "fromUid": 1002,
+      "ttl": 4,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "TErFzTY9FKNxg0DrD1i5Lw==",
+      "payloadLen": 21,
+      "forwarded": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":1,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}"
+    },
+    {
+      "name": "ack, blind (uid 0, a one-time key, a hash of the id)",
+      "frame": "{\"v\":2,\"id\":\"2807eef0-8156-4274-ae04-56b1cfa723b9\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHTuGxubzOq8Bo3hsmnwTWwtvienUtbOlnJOBLAiETEyAAAAAAAAAAAAGGRCWTE3a0lmN3I1WExFTjNxanhjMGc9PRu/02hBysYAhip0S7KS+Bb7dn1KxgEkWWRN7Z4K7cuXeg5aGTIlTwk127oDga1UOiRYmMSH3RFfUSoIqsb8xgw=\"}",
+      "kind": "ack2",
+      "bindingKind": "ack",
+      "fromUid": 0,
+      "ttl": 4,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "m7JJQHci16ghnBvTEnff8g==",
+      "payloadLen": 24,
+      "forwarded": "{\"v\":2,\"id\":\"2807eef0-8156-4274-ae04-56b1cfa723b9\",\"ttl\":4,\"hops\":1,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHTuGxubzOq8Bo3hsmnwTWwtvienUtbOlnJOBLAiETEyAAAAAAAAAAAAGGRCWTE3a0lmN3I1WExFTjNxanhjMGc9PRu/02hBysYAhip0S7KS+Bb7dn1KxgEkWWRN7Z4K7cuXeg5aGTIlTwk127oDga1UOiRYmMSH3RFfUSoIqsb8xgw=\"}"
+    },
+    {
+      "name": "ptt, segment 0 with the key envelope",
+      "frame": "{\"v\":2,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e.0\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgIHA3B0dAECD4+tW9nLRp+hZXCGdyiVDgAAAMV7InYiOjMsImRoIjoiQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0iLCJwbiI6MCwibiI6MCwiY3QiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIiwibWFjIjoiQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT0ifS7twsW0QZlHtOc89Iawg/rn25iFSklDBcHznU3JcGyHpJfIGEM4ozqHmrcVAcMfRBPh8nYwr2mQEJZJ7SPWX2ggEEjSuTYc4+u/v8rLhGjG91flzXx9R3WgvLJmnXqWwIfKfNC2SpVG3Yn4nXjD3h3qG8gXgaqdjzv7wfZHPZSF4hWYcUS6xbM9ijv4sb0udf36OT/eQ+Ts0lnLOxtRTXW4l3YcfLQulMMljdnf7TS/N4Qrxg8OQDVjuVy+o6oKVaN2c6iaR+MZqi+xp3yPMtl8cxQe2tjlUnA0e7dtbf52+IdWD3Ri31GRRcPOrxXzbqWtYxYTKw2Jf+wIphdcsKqL1rlOFkmjJMxUKxMyOTVNUCHknzaRJ99iL4j9lBsHPXoU6Ym30KTBUxgEclCWLsOqz6Z3uRDQ/dkGWsay7RhBveqAR9o+byJJMdhKYIRAeW11ePy5qRJeBLqwg4psVQxiaYfOU4x/CA==\"}",
+      "kind": "ptt",
+      "bindingKind": "ptt",
+      "fromUid": 1001,
+      "ttl": 0,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "kZSqCRDvN6pLMMqu3m1Ilw==",
+      "payloadLen": 519,
+      "forwarded": null
+    },
+    {
+      "name": "ptt, the last segment, no key",
+      "frame": "{\"v\":2,\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e.1\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgFAA3B0dAEBD4+tW9nLRp+hZXCGdyiVDgABCQEbFSJ8aK3A7Z7qLeIarP9BNZFxbBk8yrQwBWOEgOVFNGim3pKOxnoIx89uhvBYxa0fEOPgkC2iPr9G8++MF2lL/gCLmTwLgiVoVzji5SQIK/BhRZYtcphfTV6B9HodJD+PTXWGvhCRYZGE11qExP4yDxe2xMyhuisplD9VWYQSE2afnPz0tdcqYEdR8P51PRJVum5TixBI4dze+/3SwITQ2+BnoI6/OKADOeRBLGYDhSChaZjM59DtT2ScSDYDOz/6QNmCpVNrSR510N8IIQp6ukY3u8g/TQMgOg6Odmh6z56gfohaX6arg9bHc6xkosxd4UjezJ2dQDO0P6g3GOJNR2JudZQnQUwNIg26aU/UAPSK+GgO4boge76l/H6fXaWVAwVWYlkV/BdLBBAc3cuh7wUX1tLl4rDVD3M4vu8RCFA5KkI3eYZoqgfoQ0+aV8xzLQLZZme/12/i9ofpvB0WFyGglkEH\"}",
+      "kind": "ptt",
+      "bindingKind": "ptt",
+      "fromUid": 1001,
+      "ttl": 0,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "kShCiQVxF/EAYv4/DbJ+Fg==",
+      "payloadLen": 320,
+      "forwarded": null
+    },
+    {
+      "name": "ctl (a control envelope for a peer reachable only by radio), ttl 1",
+      "frame": "{\"v\":2,\"id\":\"nb-7\",\"ttl\":1,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgDJA2N0bHsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ98KYXpZ3UGtidivmFwVbpKyDvw6dq2KpE05/2+r4BPUZPYFVLcxkt5kMALBHig26t6At80oZQ59ChvqUcV5s9Aw==\"}",
+      "kind": "ctl",
+      "bindingKind": "ctl",
+      "fromUid": 1001,
+      "ttl": 1,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "SodLJBGtHmNd95jvp7/5Pw==",
+      "payloadLen": 201,
+      "forwarded": "{\"v\":2,\"id\":\"nb-7\",\"ttl\":1,\"hops\":1,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgDJA2N0bHsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ98KYXpZ3UGtidivmFwVbpKyDvw6dq2KpE05/2+r4BPUZPYFVLcxkt5kMALBHig26t6At80oZQ59ChvqUcV5s9Aw==\"}"
+    },
+    {
+      "name": "a named frame of a name this build does not know (verified, relayed within bounds, never acted on)",
+      "frame": "{\"v\":2,\"id\":\"u-1\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kAGwVwb2xsOWhlbGxvIGZyb20gdGhlIGZ1dHVyZf+8Zwi2iP0Hl9BS0sDkB5KSLPwyGuyf1Oy7fhGpDENNAbZhapOHmKX5E5ySAgxL0DFbcBoR2Z1hZ/v/RDd0HwY=\"}",
+      "kind": "named",
+      "bindingKind": "poll9",
+      "fromUid": 1001,
+      "ttl": 7,
+      "hops": 0,
+      "L": 4,
+      "mode": "realtime",
+      "seenKey": "2Ucih0YuijHg6r46ZYK+3g==",
+      "payloadLen": 27,
+      "forwarded": "{\"v\":2,\"id\":\"u-1\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kAGwVwb2xsOWhlbGxvIGZyb20gdGhlIGZ1dHVyZf+8Zwi2iP0Hl9BS0sDkB5KSLPwyGuyf1Oy7fhGpDENNAbZhapOHmKX5E5ySAgxL0DFbcBoR2Z1hZ/v/RDd0HwY=\"}"
+    },
+    {
+      "name": "an unknown name without L: valid, NOT relayed",
+      "frame": "{\"v\":2,\"id\":\"u-2\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAHBXBvbGw5ePsHbsNcw/GNiR35w/xg62h0uPhP1ugxPtDtGxB7uKgZ6rZ/3xshHoUTyKxqwrw99R5Ji8V5cgVTgNjNYj7pswI=\"}",
+      "kind": "named",
+      "bindingKind": "poll9",
+      "fromUid": 1001,
+      "ttl": 7,
+      "hops": 0,
+      "L": null,
+      "mode": "realtime",
+      "seenKey": "gtJLqRdrq9B0mD0jV1aMAQ==",
+      "payloadLen": 7,
+      "forwarded": null
+    },
+    {
+      "name": "an unknown name over 2048 payload bytes: valid, NOT relayed",
+      "frame": "{\"v\":2,\"id\":\"u-3\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kIBgVwb2xsOQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlsdOqDnfzBoC0q7qcSpUEGwT0dtKONiGntU7r5Tn0XqKt89VU7DOkm5bltEWAyADbeQjmdzrZ3OH1lJaP/ZbBA==\"}",
+      "kind": "named",
+      "bindingKind": "poll9",
+      "fromUid": 1001,
+      "ttl": 7,
+      "hops": 0,
+      "L": 4,
+      "mode": "realtime",
+      "seenKey": "GAzxoioukBDVaPzrpGu38A==",
+      "payloadLen": 2054,
+      "forwarded": null
+    }
+  ],
+  "rejected": [
+    {
+      "name": "not JSON",
+      "reason": "json",
+      "frame": "mesh"
+    },
+    {
+      "name": "a JSON array",
+      "reason": "json",
+      "frame": "[1,2]"
+    },
+    {
+      "name": "a duplicate top-level key",
+      "reason": "json",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "a duplicate key inside an unknown outer value",
+      "reason": "json",
+      "frame": "{\"v\":2,\"x\":{\"a\":1,\"a\":2},\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "v 1",
+      "reason": "v",
+      "frame": "{\"v\":1,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "v as a string",
+      "reason": "v",
+      "frame": "{\"v\":\"2\",\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "v 2.0",
+      "reason": "v",
+      "frame": "{\"v\":2.0,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "no v",
+      "reason": "v",
+      "frame": "{\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\",\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000}"
+    },
+    {
+      "name": "an empty id",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":\"\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "an id of 129 bytes",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "an id containing the binding separator",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":\"a|b\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "an id with a control character",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":\"a\\u0000b\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "an id with a line break",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":\"a\\nb\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "an id that is not a string",
+      "reason": "id",
+      "frame": "{\"v\":2,\"id\":5,\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "ttl 7.0",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7.0,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "ttl 7e0",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7e0,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "ttl as a string",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":\"7\",\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "hops -1",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":-1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "hops 0.5 (1.0.0 reads it as 0 after its own cast)",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0.5,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "ts 2^53",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":9007199254740992,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "L 4.5",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4.5,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "no ts",
+      "reason": "number",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "hops 17",
+      "reason": "hops",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":17,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "mode in another case (1.0.0 reads it as realtime)",
+      "reason": "mode",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"Realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "no mode",
+      "reason": "mode",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\",\"ts\":1790000000000}"
+    },
+    {
+      "name": "b with non-canonical trailing bits",
+      "reason": "b64",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wN=\"}"
+    },
+    {
+      "name": "b not base64",
+      "reason": "b64",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"@@@@\"}"
+    },
+    {
+      "name": "no b",
+      "reason": "b64",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000}"
+    },
+    {
+      "name": "an inner blob shorter than its fields",
+      "reason": "blob",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqq\"}"
+    },
+    {
+      "name": "a byte after the signature (1.0.0 ignores it)",
+      "reason": "blob",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wMA\"}"
+    },
+    {
+      "name": "an empty inner blob",
+      "reason": "blob",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"\"}"
+    },
+    {
+      "name": "flags 0x01 (padded, no toIdx)",
+      "reason": "flags",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"AXLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kBAKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqodnGCfm13BUozY0AQLgLQIi2c4X2SKXNU19p+P+LITvhaopFZx2UJuYIhh7pVaksz8dB0vgkHSnnsq1Vics9UJ\"}"
+    },
+    {
+      "name": "flags 0x02 (not padded: 1.0.0 would hand the payload to its pipeline unpadded)",
+      "reason": "flags",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"AnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "flags 0x0b (ack with padding and toIdx)",
+      "reason": "flags",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"C3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "flags 0x83 (a named frame with the padded bit)",
+      "reason": "flags",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"g3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAHBXBvbGw5eHcOg3AjdYoGpPMLuInMdlVANM6sO8u7uBMbVv2LG3UsI3JAlUlXoYcHS4eoaZ6M191xrjRf9xIxZiOAIcIb6AY=\"}"
+    },
+    {
+      "name": "flags 0x07 (a recipient uid in clear: the pre-349 wire)",
+      "reason": "flags",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"B3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "uid 0 on a msg",
+      "reason": "from",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAAABgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvMVOR7An7a/4xb5xQCBffuWzSwL71hk0YcuO4mU0dkUHsEsGeECQWd/kXS4beE8Nt8scUdTKBinlbLyRYStOQE=\"}"
+    },
+    {
+      "name": "uid 2^53 on a msg",
+      "reason": "from",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPACAAAAAAAABgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqopVgQ1EuB/iZt3pxWLdV9jPdnaUFl59j/p7VtpWWY1a0EjjjB1l1Q1SZ5tnGfIaeuu8j2dth/ljbQAmv/dEhAI=\"}"
+    },
+    {
+      "name": "uid 0 on a named frame",
+      "reason": "from",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAAABgfVkRxFcjwgAHBXBvbGw5eF41qFXygKu8yCG3pWhjGx7LJagJoQtEk6qBETmQMY6BYGrOGHRt9l/4V0uL7zDpYH7F5cOSzkCBzOFLSUuHpgE=\"}"
+    },
+    {
+      "name": "uid 2^53 on an ack",
+      "reason": "from",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPACAAAAAAAAAABW0udGFn8WaYOsV+CjAs4DV/CDIwwbTjOVxxZV8RP5rP15q7C6/HoVbB9Opc28p7ayNg0HQP2MhfKd1orG2neAvWbsBaAw==\"}"
+    },
+    {
+      "name": "msg, realtime, ttl 8",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":8,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlPz6C198cT6up8UJV8Mruzduf2iKY9MaXzsPJ+9BTTDGYN06vYHjsplB6XOtDwRspTkjz8QYdeYlXLfcDodWws=\"}"
+    },
+    {
+      "name": "msg, pigeon, ttl 0",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":0,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql6Xvz9+7KDwZSuF/U2S+Vb6EfnPWyWpGqYP833CVZM4TqnXE643NsWChCSxEJlbGD5YFTvNNEo8E0276+LCOwk=\"}"
+    },
+    {
+      "name": "msg, pigeon, ttl 86401",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":86401,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqv3QIBRY1H//pIzqlnATfWVb5jATyOvnq2XVvOZ3l81VYDMX6mbdKQ/pSs3tVWKFDQVXFvU7cvTD6/DvX+TjpQo=\"}"
+    },
+    {
+      "name": "msg without L",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkuOWY01V7fEluj0sToGPraxG2pGUmt9dPKj7NEfNUk2JUdBTMzXRy0CPSRzV3xwdSlumDakm33YL3fyStuBwwQ=\"}"
+    },
+    {
+      "name": "msg with L 0",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsaTW1wR8lhxtEFmVyCNSmp217sGpKOhBZQV3Cb+/eRsySa3Yyv4zhjKz/nwYbkIdT7DO/qUlRB0j/SNVEBJRgs=\"}"
+    },
+    {
+      "name": "msg with L 5",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":5,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqql3XUeqHrKzg7T+yGQVIe/JOLVYsu8S8xv8s1SbKHybwOqBngk1iFSfKnn1usIn5txRwWtcxanwv32r3/y88zwY=\"}"
+    },
+    {
+      "name": "msg with an empty payload",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAAaaAJMo/8uOHndnNEyVb9oJQ6RtRPb6GvC5SjFiZgKR3xz9z6yzc+ei6AW7qvukGFZ2SxVrfarPWg6jHulaIkAw==\"}"
+    },
+    {
+      "name": "ack with L",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oABW0udGFnh+vCsFUCyAp6QwoP3M6myPDDJ4QTLJUqWF05T+ry76oZ9KygiK0aMOhKnH/H5wPp5VwGdrdEoyXW4yj8sD4qBQ==\"}"
+    },
+    {
+      "name": "ack with ttl 5",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":5,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oABW0udGFnT9H1AiCjd9l5u8gQh9SF0zeBBbXsx7WZ2IS8gjHuXqimY3Gw3bOeuRDwAjyHjtRKNDCEpBq/hIF9OaCvf0jvAw==\"}"
+    },
+    {
+      "name": "ack in pigeon mode",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oABW0udGFnSW/2yI/sEd/geuMHdzABPtWOMULAdRoLqAP7uo7JjGYy7nAX8v5jg7OtjeKbp1U8F1uHLXK8TzocaktUVGDMDw==\"}"
+    },
+    {
+      "name": "ack with an empty payload",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAAEGtDnSK8Q0/jGYZMkk0nKQvjm/d70m3l4PgF8w+k2gg+EvIJBOOmJjBO631Yde2tOD8qoHlKPeY+AMiYXTZGgo=\"}"
+    },
+    {
+      "name": "ack whose payload is not UTF-8",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAAv/+xC+fiPEu8ljx8iP8pKiSDMDzzugCTm3ldoycwFJqMJJYDIhc+9kbYRdpO1ALBG/+edUkJsaOHf1oA4AzBeRxBQ==\"}"
+    },
+    {
+      "name": "blind ack whose payload is not 24 base64 characters",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"ack-id\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAAAAAFW0tcnQudGFndGFndGFndGFndGFneC/TK2S4e/31zxHhNwcoqpR5BAdkcSUGNhi0xFvpoCKFxFLgqXQrVaeli5n8VrIAVbtCq5/CQygVk0IfoOxBWgM=\"}"
+    },
+    {
+      "name": "ptt with ttl 1",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":1,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEwA3B0dAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAc2eH5nwVB1OmWh+yqhn9R20Xv3evZnvHnKHWA5D0JDAK01UXtaO04UQDcCmnEKeztp1Rc14pR5+IzzuHAIn+g4=\"}"
+    },
+    {
+      "name": "ptt with L",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":0,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEwA3B0dAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBATsMwzKUws8dGi4HUsgFQlDdxHz1JP7AKbmIFvS1XbXTQiduQUJuaPjU7jDdOZWMpybwVBs+nJsbrsG3sqti5QM=\"}"
+    },
+    {
+      "name": "ptt without toIdx",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kBMANwdHQBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQF9qqo0H47wipwplCz7A6IAP4YJJDm9oJ4zofB9YLLsecrgp+Vm0wTEczvxIWHYvm9cSJbpApR/eAwlCNc97zsJ\"}"
+    },
+    {
+      "name": "ptt with an empty body",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAEA3B0dPKEpdiEmTfR4M7GbSkM/ch4VcF5PKDPEmcPimf54+aTcletn968PEniyTun1D5QuZ+HwWMY7BSLreiyc0TIHws=\"}"
+    },
+    {
+      "name": "ptt with a body over 16 384 bytes",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwkAFA3B0dAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBC0eOg8Ct8iKTBE1ERS59V9ZzlwtaRb2lm/vP1kOKNpgC/oitpkG2gEI/LN0whHodIGGzsX5bDKEPZCeHAiX9Bw==\"}"
+    },
+    {
+      "name": "ctl with ttl 2",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":2,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAGA2N0bHt90gquXSv/tYLUp4cgv7/FrdzrMQKVAb+v/Ua6kXKU4Y1uMLA5zJvXtrPE7IEGtr5QI75uH3T6PmSf0IDXmO+WCA==\"}"
+    },
+    {
+      "name": "ctl with a body over 8192 bytes",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":0,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwiAFA2N0bHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eCBJpn3yGVSN5p03Asr7CGdxcl5TOAJaLOmSZ2W00VizsWNGG9T+SVKFzyVzWso5GuHBjrWt5tevfI9gwlFQxAw=\"}"
+    },
+    {
+      "name": "a named frame in pigeon mode",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABwVwb2xsOXjzo0qsYF0UjKl6kDQTuZX7zcZaE6dV8KHN96pJIy7LLcQi1zyf/uo/FLwThiyVqk1PRdN207t07Xq+m6N8fb0G\"}"
+    },
+    {
+      "name": "an unknown name with ttl 8",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":8,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABwVwb2xsOXhZUh96Y3BHo854a+b6eIRKbJIPArfC+JNdumdPagLOoBq9lRyR1YY2EFkoTIvQDDlp2TPwNJ84R/4jbUtTX7cJ\"}"
+    },
+    {
+      "name": "an unknown name with L 5",
+      "reason": "profile",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"L\":5,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABwVwb2xsOXhIBzqLkebBoBvk/stWtiWT8gVhNurxOn07L8bqx1OhLUpoF0nrhUR4K3dfgYkDdada4ussL5Dz5s767d8u1IcK\"}"
+    },
+    {
+      "name": "a name of length 0",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kAAgB4YkmbRiqzG71NMVBKa82rAhfoktiM9TGEgyKBgSdw+ahwrLYd6+drEjpIXk3sefMgxKIepBQiia7+BxRhtg/YBg==\"}"
+    },
+    {
+      "name": "a name of 9 characters",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kACwlhYmNkZWZnaGl4odGv4eOIxpr3qhdpABFZNpYd6qZOsfkKzkRlj6brO0168uEfY2jCIbpWfD41rr9dez/fFOWS2uYI/G5rytd6Dg==\"}"
+    },
+    {
+      "name": "a name in upper case",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABgRQb2xseGhLBT1+78lFPzgCXaLjM2tRF3RmH6QEceDIaFjQe7ovwcdLmjtAsEeTNb5MJwryUvTQLr/ANgAoD0bVC352OA8=\"}"
+    },
+    {
+      "name": "a name length past the payload",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kAAwVhYnu8E2WzEZGcjFMWF0Kt6MTkpWvuDJc+eNloflwcLgQqrWs89coOwNxFo3R+dGINQnr0Ks6PVkAoFZXF/GmlqAc=\"}"
+    },
+    {
+      "name": "the reserved name msg (1.0.0 would VERIFY this frame)",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAFA21zZ3hnBO+kPksKN6l3gnvIJigfdpBkG1Ky3ONiePVz285uyIll4tS3cr3vDVr2IRwvp8/mzQr8/DQMOVmIi/VourAH\"}"
+    },
+    {
+      "name": "the reserved name ack",
+      "reason": "name",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gHLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+kABQNhY2t4VgM/cAw5EdL+uVhBAqj2YDO9MlcQyAU+SQ7OjSqpfSxT+meIOWITDPefb7WF9nBr/QFwEZU1lUyqvpSKOj3uDw==\"}"
+    },
+    {
+      "name": "ttl rewritten by a 1.0.0 relay (ttl − 1, hops + 1, L / 2)",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-rt\",\"ttl\":6,\"hops\":1,\"L\":2,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9wOB+fEQiee3p/GaLeS75LSDnWIJIM/doO1PKiog+Vx9ZJBfqLRvpLabCCRlbi+g7v1FFV9IYuf7uQ343OnlDqcFh83e5n9bVydP/3pVi3JsYMsEuD5YMMYj134anfjq4UGteqSbQMa9u79LHl1WEi+UtEHkOlwY=\"}"
+    },
+    {
+      "name": "L changed",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":3,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "ts changed",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000001,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "the id changed",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-other\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "mode changed to pigeon",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"pigeon\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "a payload byte flipped",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqq6qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1rJnCR5mgEc6r5W0UgE2Y/bJcAVoAbNfo5F5Ko40/3wM=\"}"
+    },
+    {
+      "name": "a msg payload signed as kind ack",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtFbvQQEQ9NaslGESE6l7GwEUhE8fa5ufgb8+kzPRkB4cr593J7FhGRBevtXZ+GibFC1I/awatxqPqJVvVVC8Qw=\"}"
+    },
+    {
+      "name": "a named frame signed with the 1.0.0 kind string",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"n-1\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"gnLr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgAHBXBvbGw5eJU7k5bbFOUEzPScVAvIPHliIVGqf2KALVORj7i7cte5oAHib2q/Aw6b/Lz07LUzgujlZjE/CwwgPPMk9w/fbwE=\"}"
+    },
+    {
+      "name": "S + L: the signature 1.0.0 accepts and strict Ed25519 refuses",
+      "reason": "signature",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqquNiwj77SYWSAYPhOAgda2GwyUeSo30DvmYKBBAfzov1mW24pLMDJCaCgmW3Xkd3ErNcAVoAbNfo5F5Ko40/3xM=\"}"
+    },
+    {
+      "name": "older than 25 h",
+      "reason": "window",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1789909999999,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlhyVAgtEZPjgy4W4rm7AY2JnfRRl4PVDsDGfOEgXdH+UeTrZrbeYEYpuaxJVGF3m7pIoX5Z7lGmczaJ4Oc/LwE=\"}"
+    },
+    {
+      "name": "more than 5 min ahead",
+      "reason": "window",
+      "frame": "{\"v\":2,\"id\":\"m-neg\",\"ttl\":7,\"hops\":0,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000300001,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrO67PyVYonH8TxrWZykM9Z8TrLx2K9lB7qW6Tm09g7I5FPdxedYyHTzZ/hvwkXGBmCnjZg+bndInDPpY4DL8AA=\"}"
+    }
+  ],
+  "forwardTable": [
+    {
+      "ttl": 7,
+      "hops": 0,
+      "L": 4,
+      "forwardedHops": 1,
+      "note": "msg: forwarded by the node that receives hops 0"
+    },
+    {
+      "ttl": 7,
+      "hops": 1,
+      "L": 4,
+      "forwardedHops": 2,
+      "note": "…and hops 1"
+    },
+    {
+      "ttl": 7,
+      "hops": 2,
+      "L": 4,
+      "forwardedHops": null,
+      "note": "…not hops 2: floor(4 / 8) = 0 (3 hops in all)"
+    },
+    {
+      "ttl": 7,
+      "hops": 0,
+      "L": 1,
+      "forwardedHops": null,
+      "note": "L = 1 is never re-emitted"
+    },
+    {
+      "ttl": 7,
+      "hops": 0,
+      "L": 2,
+      "forwardedHops": 1,
+      "note": "L = 2: one relay"
+    },
+    {
+      "ttl": 7,
+      "hops": 1,
+      "L": 2,
+      "forwardedHops": null,
+      "note": ""
+    },
+    {
+      "ttl": 4,
+      "hops": 0,
+      "L": null,
+      "forwardedHops": 1,
+      "note": "ack: forwarded at hops 0..3"
+    },
+    {
+      "ttl": 4,
+      "hops": 3,
+      "L": null,
+      "forwardedHops": 4,
+      "note": ""
+    },
+    {
+      "ttl": 4,
+      "hops": 4,
+      "L": null,
+      "forwardedHops": null,
+      "note": "hops reached ttl"
+    },
+    {
+      "ttl": 0,
+      "hops": 0,
+      "L": null,
+      "forwardedHops": null,
+      "note": "ttl 0 (ptt) is never re-emitted"
+    },
+    {
+      "ttl": 1,
+      "hops": 0,
+      "L": null,
+      "forwardedHops": 1,
+      "note": "ctl with ttl 1: one relay"
+    },
+    {
+      "ttl": 1,
+      "hops": 1,
+      "L": null,
+      "forwardedHops": null,
+      "note": ""
+    },
+    {
+      "ttl": 86400,
+      "hops": 1,
+      "L": 4,
+      "forwardedHops": 2,
+      "note": "pigeon: the signed seconds are never touched; L bounds the radio reach"
+    },
+    {
+      "ttl": 86400,
+      "hops": 2,
+      "L": 4,
+      "forwardedHops": null,
+      "note": ""
+    },
+    {
+      "ttl": 86400,
+      "hops": 16,
+      "L": null,
+      "forwardedHops": 17,
+      "note": "hops 16 is the largest count the check accepts"
+    },
+    {
+      "ttl": 86400,
+      "hops": 500,
+      "L": 4,
+      "forwardedHops": null,
+      "note": "a shift past the word size is 0, not a wrap"
+    },
+    {
+      "ttl": 18446744073709551615,
+      "hops": 18446744073709551615,
+      "L": null,
+      "forwardedHops": null,
+      "note": "no overflow at the limit"
+    }
+  ],
+  "relayChains": [
+    {
+      "of": "msg, realtime — built by the 1.0.0 builder",
+      "relay": 1,
+      "frame": "{\"v\":2,\"id\":\"m-rt\",\"ttl\":7,\"hops\":1,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9wOB+fEQiee3p/GaLeS75LSDnWIJIM/doO1PKiog+Vx9ZJBfqLRvpLabCCRlbi+g7v1FFV9IYuf7uQ343OnlDqcFh83e5n9bVydP/3pVi3JsYMsEuD5YMMYj134anfjq4UGteqSbQMa9u79LHl1WEi+UtEHkOlwY=\"}"
+    },
+    {
+      "of": "msg, realtime — built by the 1.0.0 builder",
+      "relay": 2,
+      "frame": "{\"v\":2,\"id\":\"m-rt\",\"ttl\":7,\"hops\":2,\"L\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"A3Lr3UdLKewx2wWHaT3KKPCXdzdMEEHYoBrADDwcYLDPAAAAAAAAA+lgfVkRxFcjwgEAAAAAxXsidiI6MywiZGgiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSIsInBuIjowLCJuIjowLCJjdCI6IkFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUEiLCJtYWMiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBPSJ9wOB+fEQiee3p/GaLeS75LSDnWIJIM/doO1PKiog+Vx9ZJBfqLRvpLabCCRlbi+g7v1FFV9IYuf7uQ343OnlDqcFh83e5n9bVydP/3pVi3JsYMsEuD5YMMYj134anfjq4UGteqSbQMa9u79LHl1WEi+UtEHkOlwY=\"}"
+    },
+    {
+      "of": "ack, the 1.0.0 form (id.tag, the recipient's uid and key)",
+      "relay": 1,
+      "frame": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":1,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}"
+    },
+    {
+      "of": "ack, the 1.0.0 form (id.tag, the recipient's uid and key)",
+      "relay": 2,
+      "frame": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":2,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}"
+    },
+    {
+      "of": "ack, the 1.0.0 form (id.tag, the recipient's uid and key)",
+      "relay": 3,
+      "frame": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":3,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}"
+    },
+    {
+      "of": "ack, the 1.0.0 form (id.tag, the recipient's uid and key)",
+      "relay": 4,
+      "frame": "{\"v\":2,\"id\":\"f2f1f397-731e-4877-a32e-b5a53aaaf5bc\",\"ttl\":4,\"hops\":4,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHrTkrEQvMgh6kJWwYCYl6iEAPZj6qTVfyWyH3Cy2fMtAAAAAAAAA+oAFW0tcnQuYXRlckducmVFRmJaR1lLeurrOYEFxL/uJRDOjr4nuiguTMv3vuD/NzyTCwfubHd4Cn+idPWzFNI7GrxyaKsh+IWuM1l27avdfHTIzlogGAs=\"}"
+    }
+  ],
+  "blindAck": {
+    "sessionIdB64": "UVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVE=",
+    "ackedId": "m-rt",
+    "seedB64": "sWntT8ty/cBUv3ViJR1e/qA0JN4Tnp1tQNj7DfwVSN0=",
+    "publicB64": "dO4bG5vM6rwGjeGyafBNbC2+J6dS1s6Wck4EsCIRMTI=",
+    "payload": "dBY17kIf7r5XLEN3qjxc0g==",
+    "rngLabel": "m11/ack2",
+    "frame": "{\"v\":2,\"id\":\"2807eef0-8156-4274-ae04-56b1cfa723b9\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CHTuGxubzOq8Bo3hsmnwTWwtvienUtbOlnJOBLAiETEyAAAAAAAAAAAAGGRCWTE3a0lmN3I1WExFTjNxanhjMGc9PRu/02hBysYAhip0S7KS+Bb7dn1KxgEkWWRN7Z4K7cuXeg5aGTIlTwk127oDga1UOiRYmMSH3RFfUSoIqsb8xgw=\"}"
+  },
+  "forgedBlindAck": {
+    "frame": "{\"v\":2,\"id\":\"forged-ack\",\"ttl\":4,\"hops\":0,\"mode\":\"realtime\",\"ts\":1790000000000,\"b\":\"CDMuvo0ny3Mjs6QBwcE7XdZLzMDhDs2hwrXRGgN3moXlAAAAAAAAAAAAGGRCWTE3a0lmN3I1WExFTjNxanhjMGc9PS7q/NnpRwOzwA77x0vwm566yxNCyb5XGEO27JY/PEKoZ8VY4YbdQet9Y+sXOQtim/lLGFxaP10VT58cPZUg/wQ=\"}",
+    "frameCheck": "valid",
+    "authorMatches": false,
+    "rule": "on a node that is not the author an ACK of either form never removes, skips or delays a stored frame"
+  },
+  "ptt": {
+    "pttId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+    "keyHex": "4242424242424242424242424242424242424242424242424242424242424242",
+    "keyWire": "{\"v\":3,\"dh\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"pn\":0,\"n\":0,\"ct\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"mac\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}",
+    "chunk0B64": "Lu3CxbRBmUe05zz0hrCD+ufbmIVKSUMFwfOdTclwbIekl8gYQzijOoeatxUBwx9EE+HydjCvaZAQlkntI9ZfaCAQSNK5Nhzj67+/ysuEaMb3V+XNfH1HdaC8smadepbAh8p80LZKlUbdifideMPeHeobyBeBqp2PO/vB9kc9lIXiFZhxRLrFsz2KO/ixvS51/fo5P95D5OzSWcs7G1FNdbiXdhx8tC6UwyWN2d/tNL83hCvGDw5ANWO5XL6jqgpVo3ZzqJpH4xmqL7GnfI8y2XxzFB7a2OVScDR7t21t/nb4h1YPdGLfUZFFw86vFfNupa1jFhMrDYl/7AimF1ywqovWuU4WSaMkzFQrEzI5NU1QIeSfNpEn32IviP2UGwc9ehTpibfQpME=",
+    "chunkLastB64": "CQEbFSJ8aK3A7Z7qLeIarP9BNZFxbBk8yrQwBWOEgOVFNGim3pKOxnoIx89uhvBYxa0fEOPgkC2iPr9G8++MF2lL/gCLmTwLgiVoVzji5SQIK/BhRZYtcphfTV6B9HodJD+PTXWGvhCRYZGE11qExP4yDxe2xMyhuisplD9VWYQSE2afnPz0tdcqYEdR8P51PRJVum5TixBI4dze+/3SwITQ2+BnoI6/OKADOeRBLGYDhSChaZjM59DtT2ScSDYDOz/6QNmCpVNrSR510N8IIQp6ukY3u8g/TQMgOg6Odmh6z56gfohaX6arg9bHc6xkosxd4UjezJ2dQDO0P6g3GOJNR2JudZQnQUwNIg26aU/UAPSK+GgO4boge76l/H6fXaWVAwVWYlk="
+  },
+  "linkHello": {
+    "ble": "{\"hello\":1,\"name\":\"A1B2C3D4\",\"w\":2}",
+    "mpc": "{\"hello\":1,\"w\":2}",
+    "parsed": [
+      {
+        "frame": "{\"hello\":1,\"name\":\"A1B2C3D4\",\"w\":2}",
+        "w": 2
+      },
+      {
+        "frame": "{\"hello\":1,\"name\":\"A1B2C3D4\"}",
+        "w": 1,
+        "note": "a 1.0.0 node: no named frame is written to this link"
+      },
+      {
+        "frame": "{\"hello\":1,\"w\":3}",
+        "w": 3
+      }
+    ]
+  }
+}

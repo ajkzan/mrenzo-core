@@ -1,0 +1,216 @@
+{
+  "area": "primitives",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/utils/crypto.ts",
+    "node_modules/tweetnacl-util (decodeBase64/encodeUTF8)"
+  ],
+  "notes": [
+    "X25519 private keys are the RAW 32 random bytes from nacl.box.keyPair() (not pre-clamped); clamping happens inside scalarMult. CryptoKit Curve25519.KeyAgreement.PrivateKey(rawRepresentation:) and libsodium accept the same bytes.",
+    "Ed25519 \"private key\" on the wire/Keychain is tweetnacl's 64-byte secretKey = seed(32) || publicKey(32). CryptoKit/BouncyCastle want the 32-byte seed = first 32 bytes.",
+    "nacl.box.before (used by crypto.ts computeSharedKey, meshCrypto computeToIdx, contactPair) is HSalsa20(key = X25519(priv, pub), in = 16 zero bytes) — NOT the raw X25519 output. The ratchet (utils/ratchet.ts dh()) and X3DH use RAW nacl.scalarMult output.",
+    "decodeBase64 is STRICT: padding required, no url-safe alphabet, no whitespace/newlines (Android: use Base64.NO_WRAP, never DEFAULT). Every base64 a native client emits must be standard, padded, single-line.",
+    "encodeUTF8(bytes→string) THROWS on invalid UTF-8 (incl. CESU/surrogate and overlong forms); every decrypt path catches it and returns null → the RN receiver shows a decrypt failure. Native senders must only encrypt well-formed UTF-8.",
+    "getStableDeviceId (push-token device_id) = lowercase hex of 16 random bytes, persisted in the Keychain service com.mrenzo.deviceid (local partition)."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "x25519PubB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "ed25519PrivB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "ed25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    },
+    "bob": {
+      "uid": 2002,
+      "x25519PrivB64": "/jHUBE5Mh4TUdmo67V9Um6Z0UI96nvyeCY57YWxrfas=",
+      "x25519PubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "ed25519PrivB64": "UAYNhyuCdVJ/fk3U2ZI2vQzaSWwicGSOHKkZ/QMHlpIgsfMfb+HJX+vO6vlHCZ406/BzA5uXKxAwMiwANYPwZQ==",
+      "ed25519PubB64": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU="
+    }
+  },
+  "keyGeneration": {
+    "x25519": {
+      "function": "crypto.generateKeyPair",
+      "rng": {
+        "label": "identity/alice/x25519",
+        "draws": [
+          {
+            "n": 32,
+            "hex": "ec64ce85ce631ff8cb53fc1656b8f52f6cbdfc9e45eefaf8eb401330cf72be0b"
+          }
+        ]
+      },
+      "privateKeyB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "publicKeyB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "derivePublicKeyB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek="
+    },
+    "ed25519": {
+      "function": "crypto.generateSigningKeyPair",
+      "rng": {
+        "label": "identity/alice/ed25519",
+        "draws": [
+          {
+            "n": 32,
+            "hex": "aa5918b52c3131d82078840af7e6fadbed08e34a05f98650f9bdb9605b602689"
+          }
+        ]
+      },
+      "privateKeyB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "privateKeyHex": "aa5918b52c3131d82078840af7e6fadbed08e34a05f98650f9bdb9605b60268962e3f45934377f2d4485841ad2e0c266b49cee3270a17dc8ce68c0bf3ffcf8ea",
+      "seedHex": "aa5918b52c3131d82078840af7e6fadbed08e34a05f98650f9bdb9605b602689",
+      "publicKeyB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=",
+      "deriveSigningPublicKeyB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    }
+  },
+  "dh": {
+    "alicePrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+    "bobPubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+    "rawX25519Hex": "31631e3eee0847a363f00e454127cd19f8f6a80b86f77f357686baa3a8366d74",
+    "naclBoxBeforeHex": "3a19013a612e8f4cecf2565c2f3a45147d4d7ae7dcd42c2f2b15264140e2499b"
+  },
+  "signatures": [
+    {
+      "payload": "hello",
+      "payloadUtf8Hex": "68656c6c6f",
+      "signerEd25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=",
+      "sigB64": "c8atrDNTkRvUdS/7Jq68iuWgnjKPl3DLORDIFvyzSHtH44ci9u7aJ8ClXCeVJw4wgwA8YxQYkqz6ufFBR2VVAQ==",
+      "verifiesWithBobKey": false
+    },
+    {
+      "payload": "Привет 👋",
+      "payloadUtf8Hex": "d09fd180d0b8d0b2d0b5d18220f09f918b",
+      "signerEd25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=",
+      "sigB64": "g4ogLUWAkS5Nx55mUb0JUb+4H41fl85w8eTwjvR3D3lxusfDwmwDvKfDR0OYPE2niZUMa0XB35OQTSSA7Wx9BA==",
+      "verifiesWithBobKey": false
+    },
+    {
+      "payload": "",
+      "payloadUtf8Hex": "",
+      "signerEd25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=",
+      "sigB64": "dgT3f6s51ZkjC/SBnEzDdgMIIUsxIvLYCjZUw55aBKydXgYHLNFIKnsCvkzOgM+MV4Ic+93c+qg6X2P0Col0CA==",
+      "verifiesWithBobKey": false
+    },
+    {
+      "payload": "a=fingerprint:sha-256 ab:cd|1758800000000|nonce|1001",
+      "payloadUtf8Hex": "613d66696e6765727072696e743a7368612d3235362061623a63647c313735383830303030303030307c6e6f6e63657c31303031",
+      "signerEd25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo=",
+      "sigB64": "fgpbUtx4a7dsFCh1dIeOGPDG3C/EpHlbwsax5qvgpssBak5ncPUc1bwfsxcerUQBCTt3LR50npxugkQ6gfgECA==",
+      "verifiesWithBobKey": false
+    }
+  ],
+  "randomIdentifiers": {
+    "secureUUID": {
+      "rng": {
+        "label": "primitives/secureUUID",
+        "draws": [
+          {
+            "n": 16,
+            "hex": "d69ebc200f23e2460746465c95920684"
+          }
+        ]
+      },
+      "value": "d69ebc20-0f23-4246-8746-465c95920684"
+    },
+    "secureRandomB64_16": {
+      "rng": {
+        "label": "primitives/secureRandomB64-16",
+        "draws": [
+          {
+            "n": 16,
+            "hex": "840b4075be5fca6922c200cf88f95ad4"
+          }
+        ]
+      },
+      "value": "hAtAdb5fymkiwgDPiPla1A=="
+    },
+    "getStableDeviceId": {
+      "rng": {
+        "label": "primitives/getStableDeviceId",
+        "draws": [
+          {
+            "n": 16,
+            "hex": "d2c1b56b386cbd70bcdf63f8f6974e48"
+          }
+        ]
+      },
+      "value": "d2c1b56b386cbd70bcdf63f8f6974e48"
+    }
+  },
+  "base64Strictness": [
+    {
+      "input": "AAAA",
+      "accepted": true,
+      "bytesHex": "000000"
+    },
+    {
+      "input": "AA==",
+      "accepted": true,
+      "bytesHex": "00"
+    },
+    {
+      "input": "AAA=",
+      "accepted": true,
+      "bytesHex": "0000"
+    },
+    {
+      "input": "AAA",
+      "accepted": false
+    },
+    {
+      "input": "AA",
+      "accepted": false
+    },
+    {
+      "input": "-_8=",
+      "accepted": false
+    },
+    {
+      "input": "+/8=",
+      "accepted": true,
+      "bytesHex": "fbff"
+    },
+    {
+      "input": "AAAA\nAAAA",
+      "accepted": false
+    },
+    {
+      "input": " AAAA",
+      "accepted": false
+    },
+    {
+      "input": "AAAA=",
+      "accepted": false
+    }
+  ],
+  "utf8Strictness": [
+    {
+      "bytesHex": "c3a9",
+      "accepted": true,
+      "string": "é"
+    },
+    {
+      "bytesHex": "f09f918b",
+      "accepted": true,
+      "string": "👋"
+    },
+    {
+      "bytesHex": "ff",
+      "accepted": false
+    },
+    {
+      "bytesHex": "c3",
+      "accepted": false
+    },
+    {
+      "bytesHex": "eda080",
+      "accepted": false
+    },
+    {
+      "bytesHex": "c0af",
+      "accepted": false
+    }
+  ]
+}

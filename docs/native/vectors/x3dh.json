@@ -1,0 +1,151 @@
+{
+  "area": "x3dh",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/utils/x3dh.ts",
+    "mobile/src/services/x3dhBootstrap.ts",
+    "main.go:216-219 (/api/x3dh/*)"
+  ],
+  "notes": [
+    "STATUS: SPK/OPK generation + upload is LIVE (x3dhBootstrap.ts runs after login). deriveSharedSecretAs{Sender,Recipient} have NO production call site — the 1:1 ratchet still bootstraps from the identity key (ratchet.json). Vectors pin the construction for when it is wired.",
+    "SPK signature = Ed25519-detached over the RAW 32-byte X25519 SPK public key (no 0x05 type byte, unlike libsignal).",
+    "SK = HKDF-SHA256(ikm = 0xFF×32 || DH1 || DH2 || DH3 [|| DH4], salt = undefined → 32 zero bytes (RFC 5869 default), info = \"mr.enzo.x3dh.v1\", L = 32). DH1 = X25519(IKa, SPKb), DH2 = X25519(EKa, IKb), DH3 = X25519(EKa, SPKb), DH4 = X25519(EKa, OPKb). Raw X25519 outputs (not HSalsa20).",
+    "AD = IKa_pub(32) || IKb_pub(32) (sender first on both sides). keyIds are allocated from one monotonic counter shared by SPKs and OPKs (x3dhBootstrap.ts nextKeyId)."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "x25519PubB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "ed25519PrivB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "ed25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    },
+    "bob": {
+      "uid": 2002,
+      "x25519PrivB64": "/jHUBE5Mh4TUdmo67V9Um6Z0UI96nvyeCY57YWxrfas=",
+      "x25519PubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "ed25519PrivB64": "UAYNhyuCdVJ/fk3U2ZI2vQzaSWwicGSOHKkZ/QMHlpIgsfMfb+HJX+vO6vlHCZ406/BzA5uXKxAwMiwANYPwZQ==",
+      "ed25519PubB64": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU="
+    }
+  },
+  "signedPreKey": {
+    "function": "x3dh.generateSignedPreKey(ed25519Priv, keyId=1)",
+    "rng": {
+      "label": "x3dh/bob.generateSignedPreKey",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "73b0ddac99188f048f24d4dc0d1151ac647531398f5f5f9bc0cbacb2b5b0e506"
+        }
+      ]
+    },
+    "keyId": 1,
+    "privKey": "c7DdrJkYjwSPJNTcDRFRrGR1MTmPX1+bwMussrWw5QY=",
+    "pubKey": "rG1yhW9DslkfWsZ4Mi7CD7SAaKPa5fUSR3KeQ6ZXXyY=",
+    "signature": "SiMY1QLt36yWNZ3lac7W8BgeOq2XV5I1v1PPWRlKFm586+mzCgwfoBjbCt2rPgGo10oQyMCibAuIIlAsIulIDg=="
+  },
+  "oneTimePreKeys": {
+    "function": "x3dh.generateOneTimePreKeys(startId=100, count=2)",
+    "rng": {
+      "label": "x3dh/bob.generateOneTimePreKeys",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "48f22fb925bdb71fc617b4db1136bd02b999d445c0935b91d88741cf61d6934b"
+        },
+        {
+          "n": 32,
+          "hex": "9c9b9bb492400521d08a0c7c514d08c538cdf74e708eb631fa0d77a47cb881d1"
+        }
+      ]
+    },
+    "keys": [
+      {
+        "keyId": 100,
+        "privKey": "SPIvuSW9tx/GF7TbETa9ArmZ1EXAk1uR2IdBz2HWk0s=",
+        "pubKey": "mq9sV+UW7kHO6JLEhLMdxGivL1lrP4aCDOu0agNHoH4="
+      },
+      {
+        "keyId": 101,
+        "privKey": "nJubtJJABSHQigx8UU0IxTjN905wjrYx+g13pHy4gdE=",
+        "pubKey": "MM7BaYmm6ZcGtqn39NMf0Hr1UI/qEZx/UurVQgLQBjk="
+      }
+    ]
+  },
+  "bundleWithOpk": {
+    "userId": 2002,
+    "identityKey": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+    "signingKey": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU=",
+    "signedPreKey": {
+      "keyId": 1,
+      "pubKey": "rG1yhW9DslkfWsZ4Mi7CD7SAaKPa5fUSR3KeQ6ZXXyY=",
+      "signature": "SiMY1QLt36yWNZ3lac7W8BgeOq2XV5I1v1PPWRlKFm586+mzCgwfoBjbCt2rPgGo10oQyMCibAuIIlAsIulIDg=="
+    },
+    "oneTimePreKey": {
+      "keyId": 100,
+      "pubKey": "mq9sV+UW7kHO6JLEhLMdxGivL1lrP4aCDOu0agNHoH4="
+    }
+  },
+  "bundleWithoutOpk": {
+    "userId": 2002,
+    "identityKey": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+    "signingKey": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU=",
+    "signedPreKey": {
+      "keyId": 1,
+      "pubKey": "rG1yhW9DslkfWsZ4Mi7CD7SAaKPa5fUSR3KeQ6ZXXyY=",
+      "signature": "SiMY1QLt36yWNZ3lac7W8BgeOq2XV5I1v1PPWRlKFm586+mzCgwfoBjbCt2rPgGo10oQyMCibAuIIlAsIulIDg=="
+    }
+  },
+  "verifyBundleSignature": {
+    "bundleWithOpk": true,
+    "tamperedSpkPub": false,
+    "tamperedBundle": {
+      "userId": 2002,
+      "identityKey": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "signingKey": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU=",
+      "signedPreKey": {
+        "keyId": 1,
+        "pubKey": "MM7BaYmm6ZcGtqn39NMf0Hr1UI/qEZx/UurVQgLQBjk=",
+        "signature": "SiMY1QLt36yWNZ3lac7W8BgeOq2XV5I1v1PPWRlKFm586+mzCgwfoBjbCt2rPgGo10oQyMCibAuIIlAsIulIDg=="
+      },
+      "oneTimePreKey": {
+        "keyId": 100,
+        "pubKey": "mq9sV+UW7kHO6JLEhLMdxGivL1lrP4aCDOu0agNHoH4="
+      }
+    }
+  },
+  "fourDh": {
+    "rng": {
+      "label": "x3dh/alice.derive.4dh",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "82c8d0fa1f64f5596996e957dcdfa6e47d8cf509d014e8c1ceb039d59cbc7237"
+        }
+      ]
+    },
+    "ephemeralPubB64": "DY4VljMxj32q5kNTO8emLlDy69K6YYpP+6sULCQW90M=",
+    "sharedRootHex": "ce2d503df39a40450ed9b79681138a1d02a7163b690064fd256bc1355639c5e1",
+    "associatedDataHex": "a31d70496e0100ee844c66d23c1a806bf6f9296592151ef34dc4f97bc24ad849d23e236d9ac210b2eb7a48dbd2c79fc1f11cf17f3db8dd92d3eb619f37cc1b19",
+    "usedSignedPreKeyId": 1,
+    "usedOneTimePreKeyId": 100
+  },
+  "threeDh": {
+    "rng": {
+      "label": "x3dh/alice.derive.3dh",
+      "draws": [
+        {
+          "n": 32,
+          "hex": "a4a278697fa68efa13a34e66622263a6436732c1472f730f0b5143d72e1182e4"
+        }
+      ]
+    },
+    "ephemeralPubB64": "Qn/x9aEFdumGo8B0UGty5cS8wbs+89tvYsWRLW07oCA=",
+    "sharedRootHex": "4ca7e69e06b1a14673e57b5d89e350394b02128ee0af061b84446b7414abec57",
+    "associatedDataHex": "a31d70496e0100ee844c66d23c1a806bf6f9296592151ef34dc4f97bc24ad849d23e236d9ac210b2eb7a48dbd2c79fc1f11cf17f3db8dd92d3eb619f37cc1b19",
+    "usedSignedPreKeyId": 1,
+    "usedOneTimePreKeyId": null
+  }
+}

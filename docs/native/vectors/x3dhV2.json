@@ -1,0 +1,82 @@
+{
+  "area": "x3dhV2",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — protocol v3, build 349",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "SPK signature = Ed25519(ED, \"mrenzo-spk-v2\" ‖ raw 32 SPK bytes); a v1 (raw-bytes) signature is rejected.",
+    "DH1 = X25519(IK_A, SPK_B), DH2 = X25519(EK_A, IK_B), DH3 = X25519(EK_A, SPK_B), DH4 = X25519(EK_A, OPK_B); any all-zero output aborts.",
+    "SK = HKDF-SHA256(0^32, 0xFF^32 ‖ DH1 ‖ DH2 ‖ DH3 [‖ DH4], \"mrenzo-x3dh-v2\", 32); sid = HKDF(SK, \"mrenzo-ratchet-session-id-v3\"); RK0 = HKDF(SK, \"mrenzo-ratchet-init-v3\").",
+    "AD = \"mrenzo-ad-v3\" ‖ IK_A ‖ ED_A ‖ IK_B ‖ ED_B (initiator first, 140 bytes).",
+    "The responder refuses a header whose ik/ed is not the pinned identity of the server-stamped sender, before computing any DH."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "bobPrekeys": {
+    "spk": {
+      "rngLabel": "v3/bob-spk",
+      "keyId": 17,
+      "privB64": "yY3EHaC/MXbd0wx659zskNC0ipl2jpIzg1lVNJI4F68=",
+      "pubB64": "lVCB4WRNUzzQxpxHOfD+HTCehed9jjUA/NP5VRF0SAQ=",
+      "signatureB64": "SEWajVKJnOc/qiwp/cReA6gBnk9e2oRsdO8ssl2PmHaNSQ8j8aW/5nstD2qd8sI3anylo/KWjr/rHhCyMwsyDw=="
+    },
+    "opk": {
+      "rngLabel": "v3/bob-opk",
+      "keyId": 118,
+      "privB64": "ZP2OpZVEGNN6AYyFLDEGkZxUJK6JGdJP8xsgzSoLyhg=",
+      "pubB64": "t5kNWvovaAZioHJYSTkqvpdJOgexDJ3FSVDDhxVo3Dk="
+    },
+    "v1SignatureB64": "iQbfNAxSjEEIOaIhZwSrMEh33BWvuigjibA3pgFS90dxD0WG6cCtWLIOFhcMXW/avQzwqo7pBM/+jBmCrD+fDg=="
+  },
+  "cases": {
+    "withOpk": {
+      "rngLabel": "v3/x3dh-ek-1",
+      "ekPrivB64": "oBbG2h27htm/LJrTLwy6Kmn9wprFQYDSWh0jB1TAYNo=",
+      "ekPubB64": "l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=",
+      "header": {
+        "ik": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+        "ed": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+        "ek": "l66YNalOltiYXOII6/OyJLU7Gm9GQRWNgrrSVvUR7CQ=",
+        "spk": 17,
+        "opk": 118
+      },
+      "secret": {
+        "skB64": "oSEpVxk8SPKMkSeuFtQQiTX4WmZPeEyvoARzsGacSXU=",
+        "adB64": "bXJlbnpvLWFkLXYzHG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEdy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwz0KomH3YtKNRXdp0Dgdz0b2Hs6ZTdTTBK+chgGHuyWFcetOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+        "sidB64": "nTEL80ErNo4Nrrbpi2mGKkwjmnT4yppTXyOsShL3IdQ=",
+        "rk0B64": "TsPc3ZIMbKulxCzQjhrh+9tNDrX47X+Z5udV346cN7M="
+      }
+    },
+    "withoutOpk": {
+      "rngLabel": "v3/x3dh-ek-2",
+      "ekPrivB64": "PA8UyETBhVVotE+/3IOkE3GOA63maNuJYyi3voHPjIs=",
+      "ekPubB64": "ScRfbGdcAZmvv1zmMjkJwPtXbo8Zf5GSdnBzF03xGCI=",
+      "header": {
+        "ik": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+        "ed": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+        "ek": "ScRfbGdcAZmvv1zmMjkJwPtXbo8Zf5GSdnBzF03xGCI=",
+        "spk": 17
+      },
+      "secret": {
+        "skB64": "AUVd0UgHmWCypgtifYQg8wKRwvYkah2ZekUIqhWMgqQ=",
+        "adB64": "bXJlbnpvLWFkLXYzHG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEdy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwz0KomH3YtKNRXdp0Dgdz0b2Hs6ZTdTTBK+chgGHuyWFcetOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+        "sidB64": "oFl6F+v+vbwj9OPgQkk6aD0X0bJyxBF5lm2v6oPDtvg=",
+        "rk0B64": "j2p9yrVQ6FBPG59SUQ7zgpgtBe/DMbnNAt/L0Y1x2vw="
+      }
+    }
+  }
+}

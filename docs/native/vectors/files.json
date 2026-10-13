@@ -1,0 +1,124 @@
+{
+  "area": "files",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/utils/crypto.ts:690-789 (encryptFileBase64/decryptFileBase64/buildFileEnvelope/parseFileEnvelope)",
+    "mobile/src/services/api.ts:1110-1250 (upload/download)"
+  ],
+  "notes": [
+    "Per-file random key (32) drawn BEFORE nonce (24). ciphertext = nacl.secretbox = Poly1305 tag(16) || XSalsa20 ciphertext (libsodium crypto_secretbox_easy layout; CryptoKit has no XSalsa20 — use libsodium/swift-sodium, lazysodium on Android).",
+    "Server stores/serves RAW ciphertext bytes (multipart upload of a .bin written from the base64; GET /api/chat-files/<id> returns raw bytes). The key/nonce never touch the server: they ride inside the E2E message as the file envelope below.",
+    "File envelope = the ratchet PLAINTEXT of the message: JSON {\"p\":placeholder,\"id\":fileId,\"k\":keyB64,\"n\":nonceB64,\"m\":mimeType,\"fn\"?,\"s\"?(number),\"d\"?(number)} — undefined fields omitted. Parser requires id, k, n truthy; defaults m to application/octet-stream.",
+    "decryptFileBase64 rejects key ≠ 32 or nonce ≠ 24 bytes and returns null on auth failure."
+  ],
+  "vectors": [
+    {
+      "name": "empty file",
+      "plaintextB64": "",
+      "rng": {
+        "label": "files/encryptFileBase64/0",
+        "draws": [
+          {
+            "n": 32,
+            "hex": "5bcb701b308f53f4478eff4f1ee09d2bf6aa37c44edc207fdba0e45e4832c6a3"
+          },
+          {
+            "n": 24,
+            "hex": "fcb37b114094601be6acafc1d34968179181b47b5ec0d407"
+          }
+        ]
+      },
+      "ciphertextB64": "vTCewexoeEexIruAEdirSA==",
+      "keyB64": "W8twGzCPU/RHjv9PHuCdK/aqN8RO3CB/26DkXkgyxqM=",
+      "nonceB64": "/LN7EUCUYBvmrK/B00loF5GBtHtewNQH",
+      "ciphertextLen": 16
+    },
+    {
+      "name": "one zero byte",
+      "plaintextB64": "AA==",
+      "rng": {
+        "label": "files/encryptFileBase64/1",
+        "draws": [
+          {
+            "n": 32,
+            "hex": "d471c250bb05ae939258dd9934f850e4ff81b8a6f1582774c74996499143cb66"
+          },
+          {
+            "n": 24,
+            "hex": "687a3793093dbb2d7ad13aeed8276edcf3dd9cdb2e34a614"
+          }
+        ]
+      },
+      "ciphertextB64": "3tmDtV59pLqeUXuEinrtJII=",
+      "keyB64": "1HHCULsFrpOSWN2ZNPhQ5P+BuKbxWCd0x0mWSZFDy2Y=",
+      "nonceB64": "aHo3kwk9uy160Tru2Cdu3PPdnNsuNKYU",
+      "ciphertextLen": 17
+    },
+    {
+      "name": "bytes 0x00..0xff",
+      "plaintextB64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==",
+      "rng": {
+        "label": "files/encryptFileBase64/2",
+        "draws": [
+          {
+            "n": 32,
+            "hex": "63972974547b011a647ceb10b8c87c94f6bc06d1efc9581a256d1524a3d209b6"
+          },
+          {
+            "n": 24,
+            "hex": "a99c64cf2537d5b362a5f0fa07bae38091074b3276ead8f3"
+          }
+        ]
+      },
+      "ciphertextB64": "WKyp1KP/UD7LliPB+xBam2LEl9BbYItwCu2AluFBh4sU4eRFhfknMabAHaVjGnn4F0XbXdaEuBRDMmZrJZTX/Ake5v0osdhNgCZ0ryweYfTqY9RWD5XgTFiHQZ/72BhYp0GLN4K7gC22h6GF7ZnyUYfIB6JOP8jTw7FgX7gEI+eYLEwO3997ttn8/pk4VQgPAeQPXcyK41wZOSyaM7RxrfIeLpe99VXuYOrNOi+bZB5DLqfgFDvFgGhN13x4kndztL9S0UffPVgc0IKCOV3PfhTjhBAAOpMuTb9OaCkViPj8XBgrYcJjWCvvgKQJuoC5Lv3ji5UnSu04gvuHN/fRAX29W8I0R1RAXn3xyUHdeOg=",
+      "keyB64": "Y5cpdFR7ARpkfOsQuMh8lPa8BtHvyVgaJW0VJKPSCbY=",
+      "nonceB64": "qZxkzyU31bNipfD6B7rjgJEHSzJ26tjz",
+      "ciphertextLen": 272
+    }
+  ],
+  "envelopes": [
+    {
+      "input": {
+        "placeholder": "📷 Фото",
+        "fileId": "f_0001",
+        "key": "Y5cpdFR7ARpkfOsQuMh8lPa8BtHvyVgaJW0VJKPSCbY=",
+        "nonce": "qZxkzyU31bNipfD6B7rjgJEHSzJ26tjz",
+        "mimeType": "image/jpeg",
+        "fileName": "IMG_0001.JPG",
+        "fileSize": 256
+      },
+      "json": "{\"p\":\"📷 Фото\",\"id\":\"f_0001\",\"k\":\"Y5cpdFR7ARpkfOsQuMh8lPa8BtHvyVgaJW0VJKPSCbY=\",\"n\":\"qZxkzyU31bNipfD6B7rjgJEHSzJ26tjz\",\"m\":\"image/jpeg\",\"fn\":\"IMG_0001.JPG\",\"s\":256}",
+      "parsed": {
+        "placeholder": "📷 Фото",
+        "fileId": "f_0001",
+        "key": "Y5cpdFR7ARpkfOsQuMh8lPa8BtHvyVgaJW0VJKPSCbY=",
+        "nonce": "qZxkzyU31bNipfD6B7rjgJEHSzJ26tjz",
+        "mimeType": "image/jpeg",
+        "fileName": "IMG_0001.JPG",
+        "fileSize": 256
+      }
+    },
+    {
+      "input": {
+        "placeholder": "🎤 Голосовое",
+        "fileId": "f_0002",
+        "key": "1HHCULsFrpOSWN2ZNPhQ5P+BuKbxWCd0x0mWSZFDy2Y=",
+        "nonce": "aHo3kwk9uy160Tru2Cdu3PPdnNsuNKYU",
+        "mimeType": "audio/m4a",
+        "duration": 3.5
+      },
+      "json": "{\"p\":\"🎤 Голосовое\",\"id\":\"f_0002\",\"k\":\"1HHCULsFrpOSWN2ZNPhQ5P+BuKbxWCd0x0mWSZFDy2Y=\",\"n\":\"aHo3kwk9uy160Tru2Cdu3PPdnNsuNKYU\",\"m\":\"audio/m4a\",\"d\":3.5}",
+      "parsed": {
+        "placeholder": "🎤 Голосовое",
+        "fileId": "f_0002",
+        "key": "1HHCULsFrpOSWN2ZNPhQ5P+BuKbxWCd0x0mWSZFDy2Y=",
+        "nonce": "aHo3kwk9uy160Tru2Cdu3PPdnNsuNKYU",
+        "mimeType": "audio/m4a",
+        "duration": 3.5
+      }
+    }
+  ],
+  "wrongKey": null
+}

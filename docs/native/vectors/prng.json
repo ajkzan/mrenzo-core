@@ -1,0 +1,39 @@
+{
+  "area": "prng",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/__tests__/goldenVectors.test.ts (makeStream)"
+  ],
+  "notes": [
+    "Test-only deterministic randomness; NOT used by production. stream(label) = SHA-256(D||be32(0)) || SHA-256(D||be32(1)) || ... with D = UTF-8(\"mrenzo-golden-prng-v1|\" + label).",
+    "Each randombytes(x, n) call consumes the next n bytes; draws are NOT re-aligned to 32-byte blocks.",
+    "tweetnacl calls randombytes for: nacl.randomBytes(n) → n; nacl.box.keyPair() → 32 (raw X25519 secret, unclamped); nacl.sign.keyPair() → 32 (Ed25519 seed). Ed25519 signing and box/secretbox are deterministic."
+  ],
+  "domain": "mrenzo-golden-prng-v1|",
+  "label": "selftest",
+  "draws": [
+    {
+      "n": 1,
+      "hex": "bc"
+    },
+    {
+      "n": 31,
+      "hex": "216c7c9e58d8db63d8cb58186a322c8f76857b9fc6724efeeacd2fcc1440c3"
+    },
+    {
+      "n": 32,
+      "hex": "b3043a3ed63086b4d9effd0200481b399e74efcbbe548f81ac18112a9942ba26"
+    },
+    {
+      "n": 36,
+      "hex": "3c1d37f15a8ca2168efeb668fda8c2f90c30d3e11be340ed86812d4b09b726f509d3ec88"
+    },
+    {
+      "n": 4,
+      "hex": "d9c7ba5f"
+    }
+  ],
+  "first104BytesHex": "bc216c7c9e58d8db63d8cb58186a322c8f76857b9fc6724efeeacd2fcc1440c3b3043a3ed63086b4d9effd0200481b399e74efcbbe548f81ac18112a9942ba263c1d37f15a8ca2168efeb668fda8c2f90c30d3e11be340ed86812d4b09b726f509d3ec88d9c7ba5f"
+}

@@ -1,0 +1,74 @@
+{
+  "area": "legacyBox",
+  "schema": 1,
+  "generator": "mobile/src/__tests__/goldenVectors.test.ts",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH \"=\" padding (tweetnacl-util); *Hex = lowercase hex; *Json / wire = exact UTF-8 string as emitted by JSON.stringify; rng.draws = PRNG draws in call order (see README.md#prng)",
+  "sources": [
+    "mobile/src/utils/crypto.ts (computeSharedKey, encryptMessage, decryptMessage)"
+  ],
+  "notes": [
+    "Pre-ratchet (build ≤80) static box. Still LIVE for stories (screens/StoriesScreen.tsx:249) and as a legacy decrypt attempt in ChatScreen.tsx:543.",
+    "sharedKey = nacl.box.before(peerPub, myPriv) = HSalsa20(X25519) — see primitives.json. Symmetric: both sides derive the same 32 bytes.",
+    "wire = JSON.stringify({n: b64(nonce24), c: b64(XSalsa20-Poly1305 box.after output = 16-byte tag || ciphertext)}).",
+    "crypto.ts caches sharedKey per NUMERIC peerId only (sharedKeyCache) — a peer key rotation needs clearSharedKey(peerId).",
+    "invalidUtf8: a correctly authenticated box whose plaintext bytes are not UTF-8 decrypts to null on RN (encodeUTF8 throws inside decryptMessage)."
+  ],
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "7GTOhc5jH/jLU/wWVrj1L2y9/J5F7vr460ATMM9yvgs=",
+      "x25519PubB64": "ox1wSW4BAO6ETGbSPBqAa/b5KWWSFR7zTcT5e8JK2Ek=",
+      "ed25519PrivB64": "qlkYtSwxMdggeIQK9+b62+0I40oF+YZQ+b25YFtgJoli4/RZNDd/LUSFhBrS4MJmtJzuMnChfcjOaMC/P/z46g==",
+      "ed25519PubB64": "YuP0WTQ3fy1EhYQa0uDCZrSc7jJwoX3IzmjAvz/8+Oo="
+    },
+    "bob": {
+      "uid": 2002,
+      "x25519PrivB64": "/jHUBE5Mh4TUdmo67V9Um6Z0UI96nvyeCY57YWxrfas=",
+      "x25519PubB64": "0j4jbZrCELLrekjb0sefwfEc8X89uN2S0+thnzfMGxk=",
+      "ed25519PrivB64": "UAYNhyuCdVJ/fk3U2ZI2vQzaSWwicGSOHKkZ/QMHlpIgsfMfb+HJX+vO6vlHCZ406/BzA5uXKxAwMiwANYPwZQ==",
+      "ed25519PubB64": "ILHzH2/hyV/rzur5RwmeNOvwcwOblysQMDIsADWD8GU="
+    }
+  },
+  "sharedKeyHex": "3a19013a612e8f4cecf2565c2f3a45147d4d7ae7dcd42c2f2b15264140e2499b",
+  "messages": [
+    {
+      "plaintext": "story text / legacy {n,c} box",
+      "rng": {
+        "label": "legacyBox/encrypt-0",
+        "draws": [
+          {
+            "n": 24,
+            "hex": "00428646e258fbf298a41f0906815edd74b723bb794c159c"
+          }
+        ]
+      },
+      "wire": "{\"n\":\"AEKGRuJY+/KYpB8JBoFe3XS3I7t5TBWc\",\"c\":\"KunCrqhXyspyF04zRyveUKxGMBtfs4x/5qklPbSI9H6T6ynzIXKz5m09UEAn\"}"
+    },
+    {
+      "plaintext": "Ёжик 🦔",
+      "rng": {
+        "label": "legacyBox/encrypt-1",
+        "draws": [
+          {
+            "n": 24,
+            "hex": "d4f4947fda420438f352f58d3599d4f9e3303a3e99668ab7"
+          }
+        ]
+      },
+      "wire": "{\"n\":\"1PSUf9pCBDjzUvWNNZnU+eMwOj6ZZoq3\",\"c\":\"bAAULGT5Z6lTuxdBdE/SYPmQIqCSIKTQzZUjEhI=\"}"
+    }
+  ],
+  "invalidUtf8": {
+    "rng": {
+      "label": "legacyBox/invalid-utf8",
+      "draws": [
+        {
+          "n": 24,
+          "hex": "928558b7e4ebcf45e6bc1fcc8a7c96ef913aed30588c5c53"
+        }
+      ]
+    },
+    "wire": "{\"n\":\"koVYt+Trz0XmvB/MinyW75E67TBYjFxT\",\"c\":\"zdCFAeRHsgYo2caE7qn/M95S\"}",
+    "expectedDecrypt": null
+  }
+}

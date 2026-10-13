@@ -1,0 +1,145 @@
+{
+  "area": "unsupportedV11",
+  "schema": 1,
+  "generator": "native/core/tests (GOLDEN_WRITE=1 cargo test) — wire level 2, mr.enzo 1.1",
+  "encodings": "*B64 = RFC 4648 §4 standard base64 WITH padding, canonical trailing bits; *Hex = lowercase hex; wire / *Json = exact UTF-8 text; randomness = the golden PRNG stream (README.md#prng) under the recorded label",
+  "notes": [
+    "Keys and prekeys = x3dhV2.json; the session is set up by tests/common `linked(\"v11/u\")` (Alice initiates with the OPK, one hello each way, both sides keep an aux).",
+    "open order per session: a stored skipped key for (dh, n); the current chain with n below its counter → stale; a ratchet key in the aux's retired list → stale; else the chain walk or DH step, failed when the MAC does not verify.",
+    "Outcomes: typed / unsupported advance the ratchet and are never counted; stale never counts; failed is the only counted one. Precedence over candidate sessions: typed/unsupported > stale > tooManySkipped > failed.",
+    "aux = {\"v\":1,\"s\":{\"<sid b64>\":{\"r\":[\"<b64 8-byte prefix of a retired peer ratchet key>\",…],\"l\":<lossy run>}}} — kept by the host beside the session rows, never inside the session JSON.",
+    "Skip budget: react, nearby, ptt and edit are lossy; at 256 lossy steps in a row the next one is refused (skip-budget) until a universal message (chat, file, skdm, hello) is sent."
+  ],
+  "contract": "wire-1.1.md (design record, not published); normative text: docs/native/protocol/03-crypto.md V3.16-V3.21 and 04-mesh.md",
+  "keys": {
+    "alice": {
+      "uid": 1001,
+      "x25519PrivB64": "KAEndINSunFoc4usJqYiUhKOz1nwwvr3w1DL22hkNc4=",
+      "x25519PubB64": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+      "ed25519SecretB64": "WYxugYyfQC0GoMpQqhcEPEanPWMOQiq8NuY0Y1psjlRy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwzw==",
+      "ed25519PubB64": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8="
+    },
+    "bob": {
+      "uid": 1002,
+      "x25519PrivB64": "awuWTDsD9b4I3LMhWQcqLfbjbIZxs4AnC0TzK2Y4S6s=",
+      "x25519PubB64": "QqiYfdi0o1Fd2nQOB3PRvYezplN1NMEr5yGAYe7JYVw=",
+      "ed25519SecretB64": "C3ErvrHMk1Mv514UfLdYSPIEHQ/GIt3KW668Ax3bbSN605KxELzIIepCVsGAmJeohAD2Y+qk1X8lsh9wstnzLQ==",
+      "ed25519PubB64": "etOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0="
+    }
+  },
+  "bobStateBefore": {
+    "v": 3,
+    "role": "resp",
+    "sid": "PwvHtYbyT7o8oMCeJs3hzD4ZQqXwUiGEl8ctkLDFV9c=",
+    "ad": "bXJlbnpvLWFkLXYzHG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEdy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwz0KomH3YtKNRXdp0Dgdz0b2Hs6ZTdTTBK+chgGHuyWFcetOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+    "rootKey": "MgveulI8xEAAy7xRDDQJhu6ltwRsM9tyv3/A1dcg+t4=",
+    "myDHPub": "FVP23leNkkoyk0jqMSRW4kLWsnyugjp0YcQ4624cjFM=",
+    "myDHPriv": "HHTjI8Hn7OGsztrXSsiTHIUDofXWRV9EErMsSIaeNkA=",
+    "prevMyDHPub": "lVCB4WRNUzzQxpxHOfD+HTCehed9jjUA/NP5VRF0SAQ=",
+    "peerDH": "o+MDKNTsn7oFJ/dbxFjmHFHb88lq1h44HdL1oHC2VQs=",
+    "peerEk": "o+MDKNTsn7oFJ/dbxFjmHFHb88lq1h44HdL1oHC2VQs=",
+    "sendChainKey": "+vNuOZDyBex16uHUSJ40ch5XQ1ha9LTjyNXoVjzQHYA=",
+    "sendCount": 1,
+    "recvChainKey": "y4EVOH1G5cWgsEWWK0kwCR2GV/hZatb4dxi/YcSqfic=",
+    "recvCount": 1,
+    "prevSendCount": 0,
+    "skipped": [],
+    "x": null,
+    "peerIk": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+    "peerEd": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+    "createdAt": 1790000000000,
+    "confirmedAt": null
+  },
+  "steps": [
+    {
+      "op": "open",
+      "by": "bob",
+      "wire": "{\"v\":3,\"dh\":\"IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=\",\"pn\":1,\"n\":0,\"ct\":\"vd2lXKE0FTFsF1JZGXdpX0HDypwNprPyWAWpzNUXhpwl/wu1wkUZ647tKTnSLbGw6aB9fn+/FPT3+7t9W5Li3qqcZNHPsHgIhed0olEj6YKExrtSRzNLEV6uZANiTfXOyMf1OCWMkponoi8sWGI/EDI+FqAHenfTAjZNjXJqmWjQ2M1wtFxmiNVqTSU22cRyl+8DNn7jeYRosaEoWGnYUDdUoF/jIe9e1Qf4wogq4w==\",\"mac\":\"8IrtvmcQnNHOZuC3pf+z5jZUtfi5u8tv2HrfVgbQX5w=\"}",
+      "rngLabel": "v11/u/b1",
+      "nowMs": 1790000001000,
+      "outcome": "unsupported",
+      "raw": "{\"t\":\"poll\",\"id\":\"p-1\",\"q\":\"Куда идём?\",\"opts\":[\"А\",\"Б\"],\"alt\":\"Опрос: Куда идём?\",\"caps\":{\"v\":3,\"f\":[\"polls\"]}}",
+      "t": "poll",
+      "id": "p-1",
+      "alt": "Опрос: Куда идём?",
+      "caps": "{\"v\":3,\"f\":[\"polls\"]}",
+      "stateAfter": {
+        "v": 3,
+        "role": "resp",
+        "sid": "PwvHtYbyT7o8oMCeJs3hzD4ZQqXwUiGEl8ctkLDFV9c=",
+        "ad": "bXJlbnpvLWFkLXYzHG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEdy691HSynsMdsFh2k9yijwl3c3TBBB2KAawAw8HGCwz0KomH3YtKNRXdp0Dgdz0b2Hs6ZTdTTBK+chgGHuyWFcetOSsRC8yCHqQlbBgJiXqIQA9mPqpNV/JbIfcLLZ8y0=",
+        "rootKey": "s9H/ozaJQdltuiK8hjurQNyDLCbhDUtblqff2DiGrrg=",
+        "myDHPub": "R/u/7HcVjTtvS9wEhRiGSlf/ArI7TLR4FW7TCLKmAm8=",
+        "myDHPriv": "dVDXgWHdaRxiYSdJUoBLlL86dhmMc/TorrColxqaaB0=",
+        "prevMyDHPub": "FVP23leNkkoyk0jqMSRW4kLWsnyugjp0YcQ4624cjFM=",
+        "peerDH": "IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=",
+        "peerEk": "o+MDKNTsn7oFJ/dbxFjmHFHb88lq1h44HdL1oHC2VQs=",
+        "sendChainKey": "LVC+rtG3Ies13olbx4BbOaLSIY5hOPSBjMYq4h7SEaE=",
+        "sendCount": 0,
+        "recvChainKey": "s5QpLmqDpvAnvNZZ0xPtKzcoStHTsEjOrAMD2KJ3G08=",
+        "recvCount": 1,
+        "prevSendCount": 1,
+        "skipped": [],
+        "x": null,
+        "peerIk": "HG456vQ8iXbjW50l94C+xbyiIFb5+8X3im5wTM3zeEc=",
+        "peerEd": "cuvdR0sp7DHbBYdpPcoo8Jd3N0wQQdigGsAMPBxgsM8=",
+        "createdAt": 1790000000000,
+        "confirmedAt": null
+      }
+    },
+    {
+      "op": "open",
+      "by": "bob",
+      "wire": "{\"v\":3,\"dh\":\"IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=\",\"pn\":1,\"n\":1,\"ct\":\"Zjc5bVH7EpwxlDNleYCehqYFQTk83cigJ+bF1GuVa8srcNmhfUvRXbD9tIKkX2DE/Zn9c+5WUFsJAtOmtJ6UmlhoTZExd4ucexeb4+Tvfg8yuVxEKpCwoLU/V8U6byojlMmfNBqKl3/k4adkqQ8gUUyodyPXvItuWwhgfnGTDPo=\",\"mac\":\"+A0BwHZilQ1sY7gTMbUEFRkmSL7pBcc1vh8PUFmzF4o=\"}",
+      "rngLabel": "v11/u/b2",
+      "nowMs": 1790000001001,
+      "outcome": "typed",
+      "plaintext": "{\"t\":\"chat\",\"id\":\"m-1\",\"body\":\"после опроса\",\"caps\":{\"v\":2,\"f\":[\"pq\",\"ptt\"]}}"
+    },
+    {
+      "op": "open",
+      "by": "bob",
+      "wire": "{\"v\":3,\"dh\":\"IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=\",\"pn\":1,\"n\":0,\"ct\":\"vd2lXKE0FTFsF1JZGXdpX0HDypwNprPyWAWpzNUXhpwl/wu1wkUZ647tKTnSLbGw6aB9fn+/FPT3+7t9W5Li3qqcZNHPsHgIhed0olEj6YKExrtSRzNLEV6uZANiTfXOyMf1OCWMkponoi8sWGI/EDI+FqAHenfTAjZNjXJqmWjQ2M1wtFxmiNVqTSU22cRyl+8DNn7jeYRosaEoWGnYUDdUoF/jIe9e1Qf4wogq4w==\",\"mac\":\"8IrtvmcQnNHOZuC3pf+z5jZUtfi5u8tv2HrfVgbQX5w=\"}",
+      "nowMs": 1790000001002,
+      "outcome": "stale",
+      "why": "a position of the current chain below its counter"
+    },
+    {
+      "op": "dhStep",
+      "note": "Bob replied, Alice answered on a new ratchet key; Bob's aux now names the key he retired",
+      "auxAfter": "{\"v\":1,\"s\":{\"PwvHtYbyT7o8oMCeJs3hzD4ZQqXwUiGEl8ctkLDFV9c=\":{\"r\":[\"o+MDKNTsn7o=\",\"IIbwCfVz6dU=\"],\"l\":0}}}"
+    },
+    {
+      "op": "open",
+      "by": "bob",
+      "wire": "{\"v\":3,\"dh\":\"IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=\",\"pn\":1,\"n\":0,\"ct\":\"vd2lXKE0FTFsF1JZGXdpX0HDypwNprPyWAWpzNUXhpwl/wu1wkUZ647tKTnSLbGw6aB9fn+/FPT3+7t9W5Li3qqcZNHPsHgIhed0olEj6YKExrtSRzNLEV6uZANiTfXOyMf1OCWMkponoi8sWGI/EDI+FqAHenfTAjZNjXJqmWjQ2M1wtFxmiNVqTSU22cRyl+8DNn7jeYRosaEoWGnYUDdUoF/jIe9e1Qf4wogq4w==\",\"mac\":\"8IrtvmcQnNHOZuC3pf+z5jZUtfi5u8tv2HrfVgbQX5w=\"}",
+      "nowMs": 1790000001005,
+      "outcome": "stale",
+      "why": "its ratchet key is in the retired list of the aux"
+    },
+    {
+      "op": "open",
+      "by": "bob (no aux)",
+      "wire": "{\"v\":3,\"dh\":\"IIbwCfVz6dW4aAWacxLOW9q3cU8JohImu3tNSTPkfmo=\",\"pn\":1,\"n\":0,\"ct\":\"vd2lXKE0FTFsF1JZGXdpX0HDypwNprPyWAWpzNUXhpwl/wu1wkUZ647tKTnSLbGw6aB9fn+/FPT3+7t9W5Li3qqcZNHPsHgIhed0olEj6YKExrtSRzNLEV6uZANiTfXOyMf1OCWMkponoi8sWGI/EDI+FqAHenfTAjZNjXJqmWjQ2M1wtFxmiNVqTSU22cRyl+8DNn7jeYRosaEoWGnYUDdUoF/jIe9e1Qf4wogq4w==\",\"mac\":\"8IrtvmcQnNHOZuC3pf+z5jZUtfi5u8tv2HrfVgbQX5w=\"}",
+      "nowMs": 1790000001005,
+      "outcome": "failed",
+      "why": "without the aux a cross-chain replay cannot be told from a forgery"
+    }
+  ],
+  "skipBudget": {
+    "lossyRunMax": 256,
+    "refusal": "skip-budget",
+    "lossyKinds": [
+      "react",
+      "nearby",
+      "ptt",
+      "edit"
+    ],
+    "universalKinds": [
+      "chat",
+      "file",
+      "skdm",
+      "hello"
+    ]
+  }
+}
