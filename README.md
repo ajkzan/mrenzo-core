@@ -12,7 +12,7 @@ The repository is **source-available for review**. You can read it, build it unc
 
 ## What mr.enzo is
 
-mr.enzo is a private messenger for iPhone, made by one developer who signs as **ajkzan**. Status: version 1.1.4, in the App Store since 15 October 2026 (<https://apps.apple.com/app/id6761927514>, site <https://mrenzo.com>). It is free. You sign in with an e-mail address. Chats and calls are end-to-end encrypted; story photos are not. It also has Push to Talk (a walkie-talkie) on Apple's PushToTalk framework, an offline mode that sends text messages of one-to-one chats between nearby iPhones over Bluetooth and Wi-Fi, and eight interface languages.
+mr.enzo is a private messenger for iPhone, made by one developer who signs as **ajkzan**. Status: version 1.1.4, in the App Store since 15 October 2026 (<https://apps.apple.com/app/apple-store/id6761927514?pt=128760520&ct=github&mt=8>, site <https://mrenzo.com>). It is free. You sign in with an e-mail address. Chats and calls are end-to-end encrypted; story photos are not. It also has Push to Talk (a walkie-talkie) on Apple's PushToTalk framework, an offline mode that sends text messages of one-to-one chats between nearby iPhones over Bluetooth and Wi-Fi, and eight interface languages.
 
 What has been seen on real phones, and what has not. Seen: text between two iPhones with no connection (once, on the version of 9 October, between people who had already written to each other over the internet); Push to Talk through the internet; and, by the developer's own check, Push to Talk directly between two open apps nearby. Not seen: relaying a message through a third phone, and courier phones. Both are specified and tested in code, but not yet seen working on real phones.
 
