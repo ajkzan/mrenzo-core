@@ -12,9 +12,11 @@ The repository is **source-available for review**. You can read it, build it unc
 
 ## What mr.enzo is
 
-mr.enzo is a private messenger for iPhone, made by one developer who signs as **kris050**. Status: version 1.1.3, in the App Store since 12 October 2026 (<https://apps.apple.com/app/id6761927514>, site <https://mrenzo.com>). It is free. You sign in with an e-mail address. Chats and calls are end-to-end encrypted; story photos are not. It also has Push to Talk (a walkie-talkie) on Apple's PushToTalk framework, an offline mode that sends text between nearby iPhones over Bluetooth and Wi-Fi, and eight interface languages.
+mr.enzo is a private messenger for iPhone, made by one developer who signs as **kris050**. Status: version 1.1.4, in the App Store since 15 October 2026 (<https://apps.apple.com/app/id6761927514>, site <https://mrenzo.com>). It is free. You sign in with an e-mail address. Chats and calls are end-to-end encrypted; story photos are not. It also has Push to Talk (a walkie-talkie) on Apple's PushToTalk framework, an offline mode that sends text messages of one-to-one chats between nearby iPhones over Bluetooth and Wi-Fi, and eight interface languages.
 
-What has been seen on real phones, and what has not. Seen: text between two iPhones with no connection; Push to Talk through the internet; and, by the developer's own check, Push to Talk directly between two open apps nearby. Not seen: relaying a message through a third phone, and courier phones. Both are specified and tested in code, but not yet seen working on real phones.
+What has been seen on real phones, and what has not. Seen: text between two iPhones with no connection (once, on the version of 9 October, between people who had already written to each other over the internet); Push to Talk through the internet; and, by the developer's own check, Push to Talk directly between two open apps nearby. Not seen: relaying a message through a third phone, and courier phones. Both are specified and tested in code, but not yet seen working on real phones.
+
+Limits without the internet. Push to Talk works only while mr.enzo is open on both phones and the screen is on; it does not wake a locked phone; the voice arrives a few seconds late and reaches only the phone next to you — phones do not pass it on. Only text messages of one-to-one chats go from phone to phone. No range is promised: walls, floors and shelves differ.
 
 ## What is in this repository
 
@@ -99,8 +101,9 @@ Dates are plans, not promises.
 | 1.1.1 | between 1.1.0 and 1.1.2 | fixes and small additions |
 | 1.1.2 | 10 October 2026 | fixes and small additions |
 | 1.1.3 | 12 October 2026 | delivery ticks and call states changed to say what actually happened |
+| 1.1.4 | 15 October 2026 | reconnects by itself every few seconds; links from YouTube and other apps are saved and sent; an honest «No connection to the server» |
 
-Five versions in the first nine days: the table shows how often updates ship.
+Six versions in the first twelve days: the table shows how often updates ship.
 
 ## How this was built
 
